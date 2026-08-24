@@ -14,6 +14,13 @@ const sequelize = new Sequelize(
       underscored: true,
       timestamps: true,
     },
+    // Hapa ndipo tunapoongeza SSL kwa ajili ya Aiven mtandaoni
+    dialectOptions: {
+      ssl: process.env.DB_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: false // Inasaidia kukubali ulinzi wa Aiven bila kuhitaji kupakua faili la cheti (.pem)
+      } : false
+    }
   }
 );
 
