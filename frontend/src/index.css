@@ -1,0 +1,414 @@
+@import "tailwindcss";
+
+/* Global app styles — MUST SIMS-inspired theme */
+
+:root {
+  --brand-teal-900: #0a3d36;
+  --brand-teal-800: #0c5c50;
+  --brand-teal-700: #0e7a68;
+  --brand-teal-600: #14967f;
+  --brand-teal-500: #1caf94;
+  --brand-teal-50: #eafaf5;
+}
+
+@layer components {
+  /* Card container matching the "Published Results" panel look */
+  .sims-card {
+    @apply rounded-md border border-slate-200 bg-white shadow-sm;
+  }
+  .sims-card-header {
+    @apply flex items-center justify-between border-b border-slate-200 px-5 py-3;
+  }
+  .sims-card-title {
+    @apply text-sm font-semibold text-slate-500;
+  }
+  .sims-card-body {
+    @apply p-5;
+  }
+
+  /* Section heading used above tables, e.g. course/exam titles */
+  .sims-section-title {
+    @apply text-sm font-bold uppercase tracking-wide text-slate-700;
+  }
+
+  /* Table styled after the reference screenshot: bold header row, blue-linked
+     first column, light hover, PASS/FAIL remark badges */
+  .sims-table-wrap {
+    @apply overflow-x-auto;
+  }
+  .sims-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .sims-table thead th {
+    @apply border-y border-slate-200 bg-slate-50 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-slate-600;
+  }
+  .sims-table tbody td {
+    @apply border-b border-slate-100 px-4 py-2.5 align-middle text-slate-700;
+  }
+  .sims-table tbody tr {
+    @apply transition-colors;
+  }
+  .sims-table tbody tr:hover {
+    background-color: var(--brand-teal-50);
+  }
+  .sims-table a,
+  .sims-link {
+    @apply font-medium text-blue-600 hover:text-blue-800 hover:underline;
+  }
+
+  .sims-badge {
+    @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-bold;
+  }
+  .sims-badge-pass {
+    @apply bg-emerald-50 text-emerald-700;
+  }
+  .sims-badge-fail {
+    @apply bg-red-50 text-red-700;
+  }
+  .sims-badge-neutral {
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  /* Buttons */
+  .sims-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .sims-btn-primary {
+    background-color: var(--brand-teal-600);
+    @apply text-white;
+  }
+  .sims-btn-primary:hover {
+    background-color: var(--brand-teal-700);
+  }
+  .sims-btn-outline {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+  .sims-select {
+    @apply rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none;
+  }
+  .sims-select:focus {
+    border-color: var(--brand-teal-600);
+    box-shadow: 0 0 0 1px var(--brand-teal-600);
+  }
+
+  /* Stat cards on the dashboard home */
+  .sims-stat-card {
+    @apply flex items-center gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm;
+  }
+  .sims-stat-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-md;
+    background-color: var(--brand-teal-50);
+    color: var(--brand-teal-700);
+  }
+
+  /* Breadcrumb bar */
+  .sims-breadcrumb {
+    @apply flex h-10 items-center gap-2 border-b border-slate-200 bg-white px-5 text-sm text-slate-500;
+  }
+
+  /* Sidebar nav item */
+  .sims-nav-item {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors;
+  }
+  .sims-nav-item:hover {
+    background-color: var(--brand-teal-50);
+    color: var(--brand-teal-800);
+  }
+  .sims-nav-item-active {
+    background-color: var(--brand-teal-50);
+    color: var(--brand-teal-700);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--brand-teal-600);
+  }
+
+  /* Header brand gradient */
+  .sims-header {
+    background: linear-gradient(90deg, var(--brand-teal-700) 0%, var(--brand-teal-600) 55%, var(--brand-teal-500) 100%);
+  }
+
+  /* ---------------------------------------------------------------------
+     Result Slip — professional printed-document look.
+     Times New Roman throughout, per school formatting requirements.
+  --------------------------------------------------------------------- */
+  .result-slip {
+    font-family: 'Times New Roman', Times, serif;
+    color: #1a1a1a;
+  }
+  .result-slip-sheet {
+    @apply mx-auto bg-white;
+    max-width: 780px;
+    border: 1.5px solid #0a3d36;
+    padding: 0;
+  }
+  .result-slip-letterhead {
+    @apply flex items-center gap-4 border-b-2 px-6 py-4;
+    border-color: var(--brand-teal-800);
+    background: linear-gradient(180deg, #f4fbf9 0%, #ffffff 100%);
+  }
+  .result-slip-crest {
+    @apply flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white;
+    background-color: var(--brand-teal-700);
+  }
+  .result-slip-school-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--brand-teal-900);
+    text-transform: uppercase;
+    line-height: 1.15;
+  }
+  .result-slip-school-meta {
+    font-size: 12.5px;
+    color: #3f4a48;
+    line-height: 1.4;
+  }
+  .result-slip-doc-title {
+    @apply border-b px-6 py-2 text-center;
+    border-color: #d7dedb;
+    background-color: var(--brand-teal-50);
+  }
+  .result-slip-doc-title h3 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--brand-teal-900);
+    margin: 0;
+  }
+  .result-slip-doc-title p {
+    font-size: 12.5px;
+    color: #55605d;
+    margin-top: 2px;
+  }
+  .result-slip-body {
+    padding: 22px 28px 28px;
+  }
+  .result-slip-info-grid {
+    @apply grid grid-cols-2 gap-x-8 gap-y-1;
+    font-size: 13.5px;
+    border: 1px solid #d7dedb;
+    border-radius: 4px;
+    padding: 12px 16px;
+    background-color: #fbfdfc;
+  }
+  .result-slip-info-row {
+    @apply flex justify-between border-b border-dotted py-1;
+    border-color: #c7d0cd;
+  }
+  .result-slip-info-row:last-child,
+  .result-slip-info-row:nth-last-child(2) {
+    border-bottom: none;
+  }
+  .result-slip-info-label {
+    font-weight: 700;
+    color: #3f4a48;
+  }
+  .result-slip-info-value {
+    font-weight: 400;
+    color: #1a1a1a;
+  }
+  .result-slip-table {
+    @apply w-full border-collapse;
+    font-size: 13.5px;
+    margin-top: 18px;
+  }
+  .result-slip-table caption {
+    caption-side: top;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--brand-teal-900);
+    margin-bottom: 6px;
+  }
+  .result-slip-table th,
+  .result-slip-table td {
+    border: 1px solid #b9c4c0;
+    padding: 7px 10px;
+  }
+  .result-slip-table thead th {
+    background-color: var(--brand-teal-800);
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 12px;
+    text-align: left;
+  }
+  .result-slip-table tbody tr:nth-child(even) {
+    background-color: #f6faf9;
+  }
+  .result-slip-table tfoot td {
+    background-color: var(--brand-teal-50);
+    font-weight: 700;
+  }
+  .result-slip-summary {
+    @apply mt-5 grid grid-cols-3 gap-3;
+  }
+  .result-slip-summary-box {
+    @apply rounded border px-3 py-2 text-center;
+    border-color: #d7dedb;
+  }
+  .result-slip-summary-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #55605d;
+  }
+  .result-slip-summary-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--brand-teal-900);
+    margin-top: 2px;
+  }
+  .result-slip-remarks {
+    @apply mt-5 rounded border px-4 py-3;
+    border-color: #d7dedb;
+    font-size: 13px;
+    min-height: 46px;
+  }
+  .result-slip-signatures {
+    @apply mt-10 grid grid-cols-2 gap-10;
+    font-size: 13px;
+  }
+  .result-slip-signature-line {
+    border-top: 1px solid #1a1a1a;
+    padding-top: 4px;
+    margin-top: 34px;
+    text-align: center;
+    color: #3f4a48;
+  }
+  .result-slip-footer {
+    @apply mt-8 border-t pt-3 text-center;
+    border-color: #d7dedb;
+    font-size: 10.5px;
+    color: #8a9490;
+    font-style: italic;
+  }
+
+  /* Print: strip the app shell so only the slip is printed, cleanly. */
+  @media print {
+    .sims-header,
+    aside,
+    .sims-breadcrumb,
+    footer {
+      display: none !important;
+    }
+    main {
+      padding: 0 !important;
+    }
+    body {
+      background: #fff !important;
+    }
+    .result-slip-sheet {
+      border: none !important;
+      max-width: 100% !important;
+    }
+  }
+}
+
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: 'Times New Roman', Times, serif;
+  --heading: 'Times New Roman', Times, serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.1px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
