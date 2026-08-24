@@ -1,4 +1,5 @@
 ﻿require('dotenv').config();
+require('mysql2'); // Explicit require so Vercel's build bundles this dependency
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
