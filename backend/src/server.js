@@ -72,7 +72,7 @@ async function start() {
     console.log('✅ Tables are set up.');
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (err) {
     console.error('❌ Failed to connect to the database:', err.message);
@@ -80,4 +80,14 @@ async function start() {
   }
 }
 
-start();
+// Only run the local server (with its own DB connect + listen) when this
+// file is executed directly, e.g. `node src/server.js` or `npm run dev`.
+// When Vercel does `require('./src/server.js')` to load the serverless
+// function, this block is skipped and only `module.exports = app` below
+// runs — Vercel handles the DB connection per-request and never calls
+// app.listen() itself (binding a port is not allowed in serverless).
+if (require.main === module) {
+  start();
+}
+
+module.exports = app;
