@@ -195,18 +195,102 @@ export default function TeacherList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-black">Teachers</h2>
-          <p className="mt-1 text-sm text-black">{teachers.length} registered</p>
+      {/* Everything for the list view — header, search and table — lives in
+          one card. The table sits in its own horizontally-scrollable strip
+          so the Actions column is always fully reachable, never clipped. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">Teachers</h2>
+            <p className="mt-1 text-sm text-black">{teachers.length} registered</p>
+          </div>
+          {canEdit && (
+            <button
+              onClick={showForm ? closeForm : openAddForm}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              {showForm ? 'Close' : '+ Add Teacher'}
+            </button>
+          )}
         </div>
-        {canEdit && (
-          <button
-            onClick={showForm ? closeForm : openAddForm}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-          >
-            {showForm ? 'Close' : '+ Add Teacher'}
-          </button>
+
+        <div className="border-b border-slate-100 px-6 py-4">
+          <input
+            placeholder="Search name or staff number..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        {loading && <p className="px-6 py-4 text-sm text-black">Loading...</p>}
+        {error && <p className="px-6 py-4 text-sm text-red-600">{error}</p>}
+
+        {!loading && !error && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Staff Number</th>
+                  <th className="px-4 py-3 font-medium">Full Name</th>
+                  <th className="px-4 py-3 font-medium">Phone</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Qualification</th>
+                  <th className="px-4 py-3 font-medium">Subjects of Expertise</th>
+                  {canEdit && <th className="px-4 py-3 font-medium">Login</th>}
+                  {canEdit && <th className="whitespace-nowrap px-4 py-3 font-medium">Actions</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {teachers.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 text-black">{t.staff_number}</td>
+                    <td className="px-4 py-3 font-medium text-black">{t.full_name}</td>
+                    <td className="px-4 py-3 text-black">{t.phone || '—'}</td>
+                    <td className="px-4 py-3 text-black">{t.email || '—'}</td>
+                    <td className="px-4 py-3 text-black">{t.qualification || '—'}</td>
+                    <td className="px-4 py-3 text-black">
+                      {subjectNames(t) || <span className="text-black">Not set yet</span>}
+                    </td>
+                    {canEdit && (
+                      <td className="whitespace-nowrap px-4 py-3">
+                        {t.user_id ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                            Has Login
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => openCreateLogin(t)}
+                            className="rounded-md border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
+                          >
+                            Create Login
+                          </button>
+                        )}
+                      </td>
+                    )}
+                    {canEdit && (
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <button onClick={() => openEditForm(t)} className="text-blue-600 hover:underline">
+                          Edit
+                        </button>
+                        <span className="mx-2 text-slate-300">|</span>
+                        <button onClick={() => handleDelete(t.id, t.full_name)} className="text-red-600 hover:underline">
+                          Delete
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {teachers.length === 0 && (
+                  <tr>
+                    <td colSpan={canEdit ? 8 : 6} className="px-4 py-8 text-center text-black">
+                      No teachers yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -366,83 +450,6 @@ export default function TeacherList() {
             Close
           </button>
         </form>
-      )}
-
-      <input
-        placeholder="Search name or staff number..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mt-6 w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-      />
-
-      {loading && <p className="mt-6 text-sm text-black">Loading...</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
-
-      {!loading && !error && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
-              <tr>
-                <th className="px-4 py-3 font-medium">Staff Number</th>
-                <th className="px-4 py-3 font-medium">Full Name</th>
-                <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Qualification</th>
-                <th className="px-4 py-3 font-medium">Subjects of Expertise</th>
-                {canEdit && <th className="px-4 py-3 font-medium">Login</th>}
-                {canEdit && <th className="px-4 py-3 font-medium">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {teachers.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-black">{t.staff_number}</td>
-                  <td className="px-4 py-3 font-medium text-black">{t.full_name}</td>
-                  <td className="px-4 py-3 text-black">{t.phone || '—'}</td>
-                  <td className="px-4 py-3 text-black">{t.email || '—'}</td>
-                  <td className="px-4 py-3 text-black">{t.qualification || '—'}</td>
-                  <td className="px-4 py-3 text-black">
-                    {subjectNames(t) || <span className="text-black">Not set yet</span>}
-                  </td>
-                  {canEdit && (
-                    <td className="px-4 py-3">
-                      {t.user_id ? (
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                          Has Login
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => openCreateLogin(t)}
-                          className="rounded-md border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
-                        >
-                          Create Login
-                        </button>
-                      )}
-                    </td>
-                  )}
-                  {canEdit && (
-                    <td className="px-4 py-3">
-                      <button onClick={() => openEditForm(t)} className="text-blue-600 hover:underline">
-                        Edit
-                      </button>
-                      <span className="mx-2 text-slate-300">|</span>
-                      <button onClick={() => handleDelete(t.id, t.full_name)} className="text-red-600 hover:underline">
-                        Delete
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-              {teachers.length === 0 && (
-                <tr>
-                  <td colSpan={canEdit ? 8 : 6} className="px-4 py-8 text-center text-black">
-                    No teachers yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       )}
     </div>
   );
