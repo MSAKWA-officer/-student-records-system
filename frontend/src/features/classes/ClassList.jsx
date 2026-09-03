@@ -145,16 +145,16 @@ export default function ClassList() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Classes</h2>
-          <p className="mt-1 text-sm text-slate-500">{classes.length} registered</p>
+          <h2 className="text-xl font-semibold text-black">Classes</h2>
+          <p className="mt-1 text-sm text-black">{classes.length} registered</p>
         </div>
         {canEdit && (
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             {showAddForm ? 'Close' : '+ Add Class'}
           </button>
@@ -171,34 +171,34 @@ export default function ClassList() {
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Class Name *</label>
+              <label className="mb-1 block text-sm font-medium text-black">Class Name *</label>
               <input
                 name="name"
                 value={classForm.name}
                 onChange={handleClassFormChange}
                 placeholder="e.g. Form 1, Std 4"
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Level (number)</label>
+              <label className="mb-1 block text-sm font-medium text-black">Level (number)</label>
               <input
                 type="number"
                 name="level"
                 value={classForm.level}
                 onChange={handleClassFormChange}
                 placeholder="e.g. 1"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Education Level *</label>
+              <label className="mb-1 block text-sm font-medium text-black">Education Level *</label>
               <select
                 name="education_level"
                 value={classForm.education_level}
                 onChange={handleClassFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="primary">Primary</option>
                 <option value="secondary">Secondary</option>
@@ -208,20 +208,20 @@ export default function ClassList() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-5 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+            className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Class'}
           </button>
         </form>
       )}
 
-      {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
+      {loading && <p className="mt-6 text-sm text-black">Loading...</p>}
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
         <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Level</th>
@@ -234,13 +234,13 @@ export default function ClassList() {
               {classes.map((c) => (
                 <Fragment key={c.id}>
                   {editingId === c.id ? (
-                    <tr className="bg-teal-50/40">
+                    <tr className="bg-blue-50/40">
                       <td className="px-4 py-3">
                         <input
                           name="name"
                           value={editForm.name}
                           onChange={handleEditFormChange}
-                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -249,7 +249,7 @@ export default function ClassList() {
                           name="level"
                           value={editForm.level}
                           onChange={handleEditFormChange}
-                          className="w-20 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="w-20 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -257,23 +257,23 @@ export default function ClassList() {
                           name="education_level"
                           value={editForm.education_level}
                           onChange={handleEditFormChange}
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         >
                           <option value="primary">Primary</option>
                           <option value="secondary">Secondary</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-slate-400">—</td>
+                      <td className="px-4 py-3 text-black">—</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => handleSaveEditClass(c.id)}
                             disabled={editSaving}
-                            className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                           >
                             {editSaving ? 'Saving...' : 'Save'}
                           </button>
-                          <button onClick={cancelEditClass} className="text-xs text-slate-500 hover:underline">
+                          <button onClick={cancelEditClass} className="text-xs text-black hover:underline">
                             Cancel
                           </button>
                         </div>
@@ -282,18 +282,18 @@ export default function ClassList() {
                     </tr>
                   ) : (
                     <tr className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{c.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.level ?? '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 font-medium text-black">{c.name}</td>
+                      <td className="px-4 py-3 text-black">{c.level ?? '—'}</td>
+                      <td className="px-4 py-3 text-black">
                         {c.education_level === 'primary' ? 'Primary' : 'Secondary'}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 text-black">
                         {c.Streams?.length ? c.Streams.map((s) => s.name).join(', ') : '—'}
                       </td>
                       <td className="px-4 py-3">
                         {canEdit && (
                           <>
-                            <button onClick={() => startEditClass(c)} className="text-teal-600 hover:underline">
+                            <button onClick={() => startEditClass(c)} className="text-blue-600 hover:underline">
                               Edit
                             </button>
                             <span className="mx-2 text-slate-300">|</span>
@@ -301,7 +301,7 @@ export default function ClassList() {
                         )}
                         <button
                           onClick={() => toggleExpand(c.id)}
-                          className="text-teal-600 hover:underline"
+                          className="text-blue-600 hover:underline"
                         >
                           {expandedId === c.id ? 'Close Streams' : 'Manage Streams'}
                         </button>
@@ -322,14 +322,14 @@ export default function ClassList() {
                   {expandedId === c.id && (
                     <tr key={`${c.id}-streams`} className="bg-slate-50">
                       <td colSpan="5" className="px-4 py-4">
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black">
                           Streams of {c.name}
                         </p>
                         <ul className="mb-3 flex flex-wrap gap-2">
                           {c.Streams?.map((s) => (
                             <li
                               key={s.id}
-                              className="flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-700 shadow-sm ring-1 ring-slate-200"
+                              className="flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-black shadow-sm ring-1 ring-slate-200"
                             >
                               {s.name}
                               {canEdit && (
@@ -344,7 +344,7 @@ export default function ClassList() {
                             </li>
                           ))}
                           {!c.Streams?.length && (
-                            <li className="text-xs text-slate-400">No streams yet.</li>
+                            <li className="text-xs text-black">No streams yet.</li>
                           )}
                         </ul>
                         {canEdit && (
@@ -353,12 +353,12 @@ export default function ClassList() {
                               value={newStreamName}
                               onChange={(e) => setNewStreamName(e.target.value)}
                               placeholder="e.g. A, B, North"
-                              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                              className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
                             <button
                               type="submit"
                               disabled={streamSaving}
-                              className="whitespace-nowrap rounded-md bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                              className="whitespace-nowrap rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                             >
                               Add
                             </button>
@@ -370,7 +370,7 @@ export default function ClassList() {
               ))}
               {classes.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan="5" className="px-4 py-8 text-center text-black">
                     No classes yet.
                   </td>
                 </tr>

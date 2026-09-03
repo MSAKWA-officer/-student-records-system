@@ -142,7 +142,7 @@ export default function UserList() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">User Management</h2>
@@ -150,7 +150,7 @@ export default function UserList() {
         </div>
         <button
           onClick={showForm ? closeForm : openAddForm}
-          className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
         >
           {showForm ? 'Close' : '+ Add User'}
         </button>
@@ -175,7 +175,7 @@ export default function UserList() {
                 value={form.full_name}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -186,7 +186,7 @@ export default function UserList() {
                 value={form.email}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             {!editingId && (
@@ -200,7 +200,7 @@ export default function UserList() {
                   required
                   minLength={8}
                   placeholder="At least 8 characters"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -210,7 +210,7 @@ export default function UserList() {
                 name="role"
                 value={form.role}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r} className="capitalize">
@@ -244,14 +244,14 @@ export default function UserList() {
                 name="phone"
                 value={form.phone}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
           <button
             type="submit"
             disabled={saving}
-            className="mt-5 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+            className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
           >
             {saving ? 'Saving...' : editingId ? 'Update User' : 'Save User'}
           </button>
@@ -274,13 +274,13 @@ export default function UserList() {
             placeholder="New password (at least 8 characters)"
             required
             minLength={8}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
           <div className="mt-3 flex gap-2">
             <button
               type="submit"
               disabled={resetting}
-              className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
             >
               {resetting ? 'Saving...' : 'Set Password'}
             </button>
@@ -300,12 +300,12 @@ export default function UserList() {
           placeholder="Search name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All roles</option>
           {ROLES.map((r) => (
@@ -338,7 +338,7 @@ export default function UserList() {
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {u.full_name}
                     {u.id === currentUser?.id && (
-                      <span className="ml-2 rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-600">
+                      <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
                         You
                       </span>
                     )}
@@ -360,7 +360,7 @@ export default function UserList() {
                     </button>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <button onClick={() => openEditForm(u)} className="text-teal-600 hover:underline">
+                    <button onClick={() => openEditForm(u)} className="text-blue-600 hover:underline">
                       Edit
                     </button>
                     <span className="mx-2 text-slate-300">|</span>

@@ -85,8 +85,8 @@ export default function StudentForm() {
   if (fetching) return <div className="p-8 text-sm text-slate-500">Loading...</div>;
 
   return (
-    <div className="p-8">
-      <Link to={backTo} className="text-sm text-teal-600 hover:underline">
+    <div className="p-4">
+      <Link to={backTo} className="text-sm text-blue-600 hover:underline">
         ← Back
       </Link>
 
@@ -137,7 +137,7 @@ export default function StudentForm() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+            className="mt-6 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
           >
             {loading ? 'Saving...' : isEditMode ? 'Update Details' : 'Save Student'}
           </button>
@@ -156,7 +156,7 @@ function Field({ label, name, value, onChange, type = 'text', required = false, 
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -169,7 +169,7 @@ function Field({ label, name, value, onChange, type = 'text', required = false, 
           value={value}
           onChange={onChange}
           required={required}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
       )}
     </div>

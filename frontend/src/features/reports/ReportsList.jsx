@@ -113,7 +113,7 @@ export default function ReportsList() {
 }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       {routeClassId && (
         <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
           <Link to="/dashboard/reports" className="hover:underline">Reports</Link>
@@ -144,7 +144,7 @@ export default function ReportsList() {
               onClick={() => selectClass(c.id)}
               className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                 String(classId) === String(c.id)
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
               }`}
             >
@@ -186,7 +186,7 @@ export default function ReportsList() {
                 value={streamId}
                 onChange={(e) => setStreamId(e.target.value)}
                 disabled={streamsForSelectedClass.length === 0}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-400"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
               >
                 <option value="">All Streams</option>
                 {streamsForSelectedClass.map((s) => (
@@ -197,7 +197,7 @@ export default function ReportsList() {
                 placeholder="Search by name or admission number..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ export default function ReportsList() {
                         <Link
                           to={`/dashboard/students/${s.id}/report-card`}
                           state={{ from: `${location.pathname}${location.search}` }}
-                          className="rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50"
+                          className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
                         >
                           View Full Results Report
                         </Link>

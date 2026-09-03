@@ -116,7 +116,7 @@ export default function TermList() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Terms</h2>
@@ -125,7 +125,7 @@ export default function TermList() {
         {canEdit && (
           <button
             onClick={showForm ? closeForm : openAddForm}
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             {showForm ? 'Close' : '+ Add Term'}
           </button>
@@ -137,7 +137,7 @@ export default function TermList() {
         <select
           value={filterYear}
           onChange={(e) => setFilterYear(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All Years</option>
           {academicYears.map((y) => (
@@ -168,7 +168,7 @@ export default function TermList() {
                 onChange={handleFormChange}
                 placeholder="e.g. First Term"
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -178,7 +178,7 @@ export default function TermList() {
                 value={form.academic_year_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Year --</option>
                 {academicYears.map((y) => (
@@ -195,7 +195,7 @@ export default function TermList() {
                 name="start_date"
                 value={form.start_date}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function TermList() {
                 name="end_date"
                 value={form.end_date}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function TermList() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
             >
               {saving ? 'Saving...' : editingId ? 'Update Term' : 'Save Term'}
             </button>
@@ -268,7 +268,7 @@ export default function TermList() {
                   </td>
                   {canEdit && (
                     <td className="px-4 py-3">
-                      <button onClick={() => openEditForm(t)} className="text-teal-600 hover:underline">
+                      <button onClick={() => openEditForm(t)} className="text-blue-600 hover:underline">
                         Edit
                       </button>
                       <span className="mx-2 text-slate-300">|</span>

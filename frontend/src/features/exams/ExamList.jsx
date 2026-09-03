@@ -117,7 +117,7 @@ export default function ExamList() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Exams</h2>
@@ -126,7 +126,7 @@ export default function ExamList() {
         {canEdit && (
           <button
             onClick={showForm ? closeForm : openAddForm}
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             {showForm ? 'Close' : '+ Add Exam'}
           </button>
@@ -138,7 +138,7 @@ export default function ExamList() {
         <select
           value={filterTerm}
           onChange={(e) => setFilterTerm(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All Terms</option>
           {terms.map((t) => (
@@ -169,7 +169,7 @@ export default function ExamList() {
                 onChange={handleFormChange}
                 placeholder="e.g. Mid-Term Exam"
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -179,7 +179,7 @@ export default function ExamList() {
                 value={form.term_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Term --</option>
                 {terms.map((t) => (
@@ -196,7 +196,7 @@ export default function ExamList() {
                 name="exam_date"
                 value={form.exam_date}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -207,7 +207,7 @@ export default function ExamList() {
                 value={form.max_marks}
                 onChange={handleFormChange}
                 min="1"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -219,7 +219,7 @@ export default function ExamList() {
                 onChange={handleFormChange}
                 min="0"
                 max="100"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function ExamList() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
             >
               {saving ? 'Saving...' : editingId ? 'Update Exam' : 'Save Exam'}
             </button>
@@ -273,7 +273,7 @@ export default function ExamList() {
                   <td className="px-4 py-3 text-slate-600">{ex.weight_percent}%</td>
                   {canEdit && (
                     <td className="px-4 py-3">
-                      <button onClick={() => openEditForm(ex)} className="text-teal-600 hover:underline">
+                      <button onClick={() => openEditForm(ex)} className="text-blue-600 hover:underline">
                         Edit
                       </button>
                       {canDelete && (

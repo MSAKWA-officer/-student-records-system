@@ -3,12 +3,12 @@
 /* Global app styles — MUST SIMS-inspired theme */
 
 :root {
-  --brand-teal-900: #0a3d36;
-  --brand-teal-800: #0c5c50;
-  --brand-teal-700: #0e7a68;
-  --brand-teal-600: #14967f;
-  --brand-teal-500: #1caf94;
-  --brand-teal-50: #eafaf5;
+  --brand-blue-900: #0b1f4d;
+  --brand-blue-800: #0f2f6e;
+  --brand-blue-700: #123f8f;
+  --brand-blue-600: #1d54b0;
+  --brand-blue-500: #2f6fd6;
+  --brand-blue-50: #eaf1fc;
 }
 
 @layer components {
@@ -49,7 +49,7 @@
     @apply transition-colors;
   }
   .sims-table tbody tr:hover {
-    background-color: var(--brand-teal-50);
+    background-color: var(--brand-blue-50);
   }
   .sims-table a,
   .sims-link {
@@ -74,11 +74,11 @@
     @apply inline-flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
   }
   .sims-btn-primary {
-    background-color: var(--brand-teal-600);
+    background-color: var(--brand-blue-600);
     @apply text-white;
   }
   .sims-btn-primary:hover {
-    background-color: var(--brand-teal-700);
+    background-color: var(--brand-blue-700);
   }
   .sims-btn-outline {
     @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
@@ -87,8 +87,8 @@
     @apply rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none;
   }
   .sims-select:focus {
-    border-color: var(--brand-teal-600);
-    box-shadow: 0 0 0 1px var(--brand-teal-600);
+    border-color: var(--brand-blue-600);
+    box-shadow: 0 0 0 1px var(--brand-blue-600);
   }
 
   /* Stat cards on the dashboard home */
@@ -97,8 +97,8 @@
   }
   .sims-stat-icon {
     @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-md;
-    background-color: var(--brand-teal-50);
-    color: var(--brand-teal-700);
+    background-color: var(--brand-blue-50);
+    color: var(--brand-blue-700);
   }
 
   /* Breadcrumb bar */
@@ -111,19 +111,19 @@
     @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors;
   }
   .sims-nav-item:hover {
-    background-color: var(--brand-teal-50);
-    color: var(--brand-teal-800);
+    background-color: var(--brand-blue-50);
+    color: var(--brand-blue-800);
   }
   .sims-nav-item-active {
-    background-color: var(--brand-teal-50);
-    color: var(--brand-teal-700);
+    background-color: var(--brand-blue-50);
+    color: var(--brand-blue-700);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--brand-teal-600);
+    box-shadow: inset 3px 0 0 var(--brand-blue-600);
   }
 
   /* Header brand gradient */
   .sims-header {
-    background: linear-gradient(90deg, var(--brand-teal-700) 0%, var(--brand-teal-600) 55%, var(--brand-teal-500) 100%);
+    background: linear-gradient(90deg, var(--brand-blue-700) 0%, var(--brand-blue-600) 55%, var(--brand-blue-500) 100%);
   }
 
   /* ---------------------------------------------------------------------
@@ -137,23 +137,23 @@
   .result-slip-sheet {
     @apply mx-auto bg-white;
     max-width: 780px;
-    border: 1.5px solid #0a3d36;
+    border: 1.5px solid #0b1f4d;
     padding: 0;
   }
   .result-slip-letterhead {
     @apply flex items-center gap-4 border-b-2 px-6 py-4;
-    border-color: var(--brand-teal-800);
+    border-color: var(--brand-blue-800);
     background: linear-gradient(180deg, #f4fbf9 0%, #ffffff 100%);
   }
   .result-slip-crest {
     @apply flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-white;
-    background-color: var(--brand-teal-700);
+    background-color: var(--brand-blue-700);
   }
   .result-slip-school-name {
     font-size: 22px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    color: var(--brand-teal-900);
+    color: var(--brand-blue-900);
     text-transform: uppercase;
     line-height: 1.15;
   }
@@ -165,14 +165,14 @@
   .result-slip-doc-title {
     @apply border-b px-6 py-2 text-center;
     border-color: #d7dedb;
-    background-color: var(--brand-teal-50);
+    background-color: var(--brand-blue-50);
   }
   .result-slip-doc-title h3 {
     font-size: 16px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--brand-teal-900);
+    color: var(--brand-blue-900);
     margin: 0;
   }
   .result-slip-doc-title p {
@@ -219,7 +219,7 @@
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--brand-teal-900);
+    color: var(--brand-blue-900);
     margin-bottom: 6px;
   }
   .result-slip-table th,
@@ -228,7 +228,7 @@
     padding: 7px 10px;
   }
   .result-slip-table thead th {
-    background-color: var(--brand-teal-800);
+    background-color: var(--brand-blue-800);
     color: #ffffff;
     text-transform: uppercase;
     letter-spacing: 0.4px;
@@ -239,7 +239,7 @@
     background-color: #f6faf9;
   }
   .result-slip-table tfoot td {
-    background-color: var(--brand-teal-50);
+    background-color: var(--brand-blue-50);
     font-weight: 700;
   }
   .result-slip-summary {
@@ -258,7 +258,7 @@
   .result-slip-summary-value {
     font-size: 18px;
     font-weight: 700;
-    color: var(--brand-teal-900);
+    color: var(--brand-blue-900);
     margin-top: 2px;
   }
   .result-slip-remarks {

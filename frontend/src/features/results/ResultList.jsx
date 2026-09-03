@@ -229,7 +229,7 @@ export default function ResultList() {
   const filledCount = Object.values(rows).filter((r) => r.resultId).length;
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Results</h2>
@@ -250,7 +250,7 @@ export default function ResultList() {
               setStreamId('');
             }}
             disabled={loadingLookups}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All Classes</option>
             {classes.map((c) => (
@@ -264,7 +264,7 @@ export default function ResultList() {
             value={streamId}
             onChange={(e) => setStreamId(e.target.value)}
             disabled={!classId}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-400"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">All Streams</option>
             {streamsForSelectedClass.map((s) => (
@@ -278,7 +278,7 @@ export default function ResultList() {
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
             disabled={loadingLookups}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="">-- Select Subject --</option>
             {subjects.map((sub) => (
@@ -292,7 +292,7 @@ export default function ResultList() {
             value={examId}
             onChange={(e) => setExamId(e.target.value)}
             disabled={loadingLookups}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="">-- Select Exam --</option>
             {exams.map((ex) => (
@@ -343,7 +343,7 @@ export default function ResultList() {
                   {group.classId && (
                     <Link
                       to={`/dashboard/results/class/${group.classId}?subject=${subjectId}&exam=${examId}${streamId ? `&stream=${streamId}` : ''}`}
-                      className="rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50"
+                      className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
                     >
                       Open {group.className} only
                     </Link>
@@ -378,7 +378,7 @@ export default function ResultList() {
                               max={selectedExam?.max_marks || 100}
                               value={row.marks_obtained}
                               onChange={(e) => updateRow(s.id, 'marks_obtained', e.target.value)}
-                              className="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                              className="w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
                           ) : (
                             <span className="text-slate-700">{row.marks_obtained || '—'}</span>
@@ -386,7 +386,7 @@ export default function ResultList() {
                           {row.error && <p className="mt-1 text-xs text-red-600">{row.error}</p>}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="rounded-full bg-teal-100 px-2 py-1 text-xs font-medium text-teal-700">
+                          <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
                             {row.grade || '—'}
                           </span>
                         </td>
@@ -396,7 +396,7 @@ export default function ResultList() {
                               value={row.remarks}
                               onChange={(e) => updateRow(s.id, 'remarks', e.target.value)}
                               placeholder="e.g. Making good progress"
-                              className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                              className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             />
                           ) : (
                             <span className="text-slate-600">{row.remarks || '—'}</span>
@@ -408,7 +408,7 @@ export default function ResultList() {
                               <button
                                 onClick={() => saveRow(s.id)}
                                 disabled={row.saving}
-                                className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                               >
                                 {row.saving ? 'Saving...' : 'Save'}
                               </button>
@@ -423,7 +423,7 @@ export default function ResultList() {
                             )}
                             <Link
                               to={`/dashboard/students/${s.id}/report-card`}
-                              className="rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50"
+                              className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
                             >
                               Report
                             </Link>

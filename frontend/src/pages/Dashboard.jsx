@@ -18,6 +18,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   School,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -149,6 +150,7 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState({});
   const [currentYear, setCurrentYear] = useState(null);
@@ -286,20 +288,30 @@ export default function Dashboard() {
       <div className="flex flex-1">
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 top-16 z-20 flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white transition-transform lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${
+          className={`fixed inset-y-0 top-16 z-20 flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          } ${collapsed ? 'w-64 lg:w-[68px]' : 'w-64'}`}
         >
-          <div className="px-4 py-3">
+          <div className={`flex items-center gap-2 px-4 py-3 ${collapsed ? 'lg:justify-center lg:px-0' : 'justify-between'}`}>
             <span
-              className="inline-block rounded px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white"
-              style={{ backgroundColor: 'var(--brand-teal-600)' }}
+              className={`inline-block rounded px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white ${
+                collapsed ? 'lg:hidden' : ''
+              }`}
+              style={{ backgroundColor: 'var(--brand-blue-600)' }}
             >
               {user?.role === 'admin' ? 'Admin Panel' : user?.role || 'Panel'}
             </span>
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              className="hidden shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:block"
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
           </div>
 
-          <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
+          <nav className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden px-3 pb-4">
             {visibleNav.map((item) => (
               <NavNode
                 key={item.to || item.label}
@@ -310,6 +322,7 @@ export default function Dashboard() {
                 openGroups={openGroups}
                 toggleGroup={toggleGroup}
                 onNavigate={() => setMobileOpen(false)}
+                collapsed={collapsed}
               />
             ))}
           </nav>
@@ -333,7 +346,7 @@ export default function Dashboard() {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="sims-breadcrumb justify-between">
             <div className="flex items-center gap-1.5">
-              <Link to="/dashboard" className="hover:text-teal-700">
+              <Link to="/dashboard" className="hover:text-blue-700">
                 Home
               </Link>
               {activeTrail.map((label, idx) => (
@@ -356,7 +369,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <main className="flex-1 p-4 sm:p-6">
+          <main className="flex-1 p-3 sm:p-4">
             <Outlet />
           </main>
 
@@ -372,8 +385,11 @@ export default function Dashboard() {
 // Renders one nav entry — a plain link (leaf) or a toggleable group, and
 // recurses into its children. `depth` controls indentation/size so nested
 // sub-sub-items (e.g. individual classes under "Result Slips") read clearly.
-function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, onNavigate }) {
+function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, onNavigate, collapsed }) {
   const key = `${pathPrefix}${item.label || item.to}`;
+  // Labels/chevrons hide only at the lg breakpoint when the sidebar is
+  // collapsed to an icon rail; on mobile the sidebar is always full-width.
+  const hideLabel = collapsed ? 'lg:hidden' : '';
 
   if (item.children) {
     const active = isItemActive(item, pathname);
@@ -383,18 +399,19 @@ function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, o
       <div>
         <button
           onClick={() => toggleGroup(key)}
+          title={collapsed ? item.label : undefined}
           className={`sims-nav-item w-full justify-between ${depth > 0 ? 'py-1.5 text-[13px]' : ''} ${
             active ? 'sims-nav-item-active' : ''
-          }`}
+          } ${collapsed ? 'lg:justify-center lg:px-2' : ''}`}
         >
           <span className="flex items-center gap-3">
-            {Icon && <Icon size={17} />}
-            {item.label}
+            {Icon && <Icon size={17} className="shrink-0" />}
+            <span className={hideLabel}>{item.label}</span>
           </span>
-          {open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+          <span className={hideLabel}>{open ? <ChevronDown size={15} /> : <ChevronRight size={15} />}</span>
         </button>
         {open && (
-          <div className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-200 pl-3">
+          <div className={`ml-4 mt-0.5 space-y-0.5 border-l border-slate-200 pl-3 ${collapsed ? 'lg:hidden' : ''}`}>
             {item.children.map((child) => (
               <NavNode
                 key={child.to || child.label}
@@ -405,6 +422,7 @@ function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, o
                 openGroups={openGroups}
                 toggleGroup={toggleGroup}
                 onNavigate={onNavigate}
+                collapsed={collapsed}
               />
             ))}
           </div>
@@ -419,10 +437,13 @@ function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, o
     <Link
       to={item.to}
       onClick={onNavigate}
-      className={`sims-nav-item ${depth > 0 ? 'py-1.5 text-[13px]' : ''} ${active ? 'sims-nav-item-active' : ''}`}
+      title={collapsed ? item.label : undefined}
+      className={`sims-nav-item ${depth > 0 ? 'py-1.5 text-[13px]' : ''} ${active ? 'sims-nav-item-active' : ''} ${
+        collapsed ? 'lg:justify-center lg:px-2' : ''
+      }`}
     >
-      {Icon && <Icon size={17} />}
-      {item.label}
+      {Icon && <Icon size={17} className="shrink-0" />}
+      <span className={hideLabel}>{item.label}</span>
     </Link>
   );
 }

@@ -203,7 +203,7 @@ export default function AttendanceList() {
   const recordedCount = Object.values(rows).filter((r) => r.recordId).length;
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       {routeClassId && (
         <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
           <Link to="/dashboard/attendance" className="hover:underline">Attendance</Link>
@@ -224,7 +224,7 @@ export default function AttendanceList() {
           </p>
         </div>
           {canEdit && readyToLoad && students.length > 0 && (
-    <button onClick={saveAll} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500">
+    <button onClick={saveAll} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">
       Save All
     </button>
   )}
@@ -249,7 +249,7 @@ export default function AttendanceList() {
         {canEdit && readyToLoad && students.length > 0 && (
           <button
             onClick={saveAll}
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             Save All
           </button>
@@ -266,7 +266,7 @@ export default function AttendanceList() {
               setStreamId('');
             }}
             disabled={loadingLookups || Boolean(routeClassId)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
           >
             <option value="">-- Select Class --</option>
             {classes.map((c) => (
@@ -280,7 +280,7 @@ export default function AttendanceList() {
             value={streamId}
             onChange={(e) => setStreamId(e.target.value)}
             disabled={!classId}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-400"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="">All Streams</option>
             {streamsForSelectedClass.map((s) => (
@@ -294,7 +294,7 @@ export default function AttendanceList() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -359,7 +359,7 @@ export default function AttendanceList() {
                           value={row.notes}
                           onChange={(e) => updateRow(s.id, 'notes', e.target.value)}
                           placeholder="e.g. Was sick"
-                          className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       ) : (
                         <span className="text-slate-600">{row.notes || '—'}</span>
@@ -371,7 +371,7 @@ export default function AttendanceList() {
                           <button
                             onClick={() => saveRow(s.id)}
                             disabled={row.saving}
-                            className="rounded-md bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                           >
                             {row.saving ? 'Saving...' : 'Save'}
                           </button>

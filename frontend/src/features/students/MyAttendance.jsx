@@ -68,8 +68,8 @@ export default function MyAttendance() {
   }, [records]);
 
   return (
-    <div className="p-8">
-      <Link to={backTo} className="text-sm text-teal-600 hover:underline">
+    <div className="p-4">
+      <Link to={backTo} className="text-sm text-blue-600 hover:underline">
         {backLabel}
       </Link>
 
@@ -87,7 +87,7 @@ export default function MyAttendance() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500"
+              className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </div>
           <div>
@@ -96,7 +96,7 @@ export default function MyAttendance() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500"
+              className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
             />
           </div>
         </div>

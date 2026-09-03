@@ -65,7 +65,7 @@ export default function Login() {
               )}
 
               <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
-              <div className="mb-4 flex items-center rounded-md border border-slate-300 focus-within:border-teal-600 focus-within:ring-1 focus-within:ring-teal-600">
+              <div className="mb-4 flex items-center rounded-md border border-slate-300 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600">
                 <span className="pl-3 text-slate-400">
                   <Mail size={16} />
                 </span>
@@ -80,7 +80,7 @@ export default function Login() {
               </div>
 
               <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
-              <div className="mb-6 flex items-center rounded-md border border-slate-300 focus-within:border-teal-600 focus-within:ring-1 focus-within:ring-teal-600">
+              <div className="mb-6 flex items-center rounded-md border border-slate-300 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600">
                 <span className="pl-3 text-slate-400">
                   <Lock size={16} />
                 </span>

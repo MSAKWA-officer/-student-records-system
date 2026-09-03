@@ -185,17 +185,17 @@ export default function ClassSubjectList() {
   const groupedAssignments = groupByClass(assignments);
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Subject Allocation</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="text-xl font-semibold text-black">Subject Allocation</h2>
+          <p className="mt-1 text-sm text-black">
             Link a Teacher, Subject, Class and Stream for an academic year · {assignments.length} found
           </p>
         </div>
         <button
           onClick={showForm ? closeForm : openAddForm}
-          className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
         >
           {showForm ? 'Close' : '+ Add Allocation'}
         </button>
@@ -206,18 +206,18 @@ export default function ClassSubjectList() {
           onSubmit={handleSubmit}
           className="mt-5 max-w-3xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
         >
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">New Subject Allocation</h3>
+          <h3 className="mb-4 text-sm font-semibold text-black">New Subject Allocation</h3>
           {formError && (
             <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
           )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Teacher</label>
+              <label className="mb-1 block text-sm font-medium text-black">Teacher</label>
               <select
                 name="teacher_id"
                 value={form.teacher_id}
                 onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Not assigned yet --</option>
                 {teachers.map((t) => (
@@ -226,13 +226,13 @@ export default function ClassSubjectList() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Subject *</label>
+              <label className="mb-1 block text-sm font-medium text-black">Subject *</label>
               <select
                 name="subject_id"
                 value={form.subject_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Subject --</option>
                 {subjects.map((s) => (
@@ -241,13 +241,13 @@ export default function ClassSubjectList() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Class *</label>
+              <label className="mb-1 block text-sm font-medium text-black">Class *</label>
               <select
                 name="school_class_id"
                 value={form.school_class_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Class --</option>
                 {classes.map((c) => (
@@ -256,13 +256,13 @@ export default function ClassSubjectList() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Academic Year *</label>
+              <label className="mb-1 block text-sm font-medium text-black">Academic Year *</label>
               <select
                 name="academic_year_id"
                 value={form.academic_year_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Year --</option>
                 {years.map((y) => (
@@ -271,31 +271,31 @@ export default function ClassSubjectList() {
               </select>
             </div>
             <div className="sm:col-span-4">
-              <label className="mb-1 block text-sm font-medium text-slate-700">Stream</label>
+              <label className="mb-1 block text-sm font-medium text-black">Stream</label>
               {!form.school_class_id && (
-                <p className="text-xs text-slate-400">Select a class first to see its streams.</p>
+                <p className="text-xs text-black">Select a class first to see its streams.</p>
               )}
               {form.school_class_id && (
                 <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-md border border-slate-300 px-3 py-2">
                   {streamsForClass(form.school_class_id).length === 0 && (
-                    <span className="text-sm text-slate-400">
+                    <span className="text-sm text-black">
                       This class has no streams — the allocation will apply to the whole class.
                     </span>
                   )}
                   {streamsForClass(form.school_class_id).map((s) => (
-                    <label key={s.id} className="flex items-center gap-1.5 text-sm text-slate-700">
+                    <label key={s.id} className="flex items-center gap-1.5 text-sm text-black">
                       <input
                         type="checkbox"
                         checked={form.stream_ids.map(String).includes(String(s.id))}
                         onChange={() => toggleFormStream(s.id)}
-                        className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                       {s.name}
                     </label>
                   ))}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-black">
                 Select one or more streams. If you select none, the allocation will apply to ALL streams of this class.
               </p>
             </div>
@@ -303,7 +303,7 @@ export default function ClassSubjectList() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-5 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+            className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Allocation'}
           </button>
@@ -317,7 +317,7 @@ export default function ClassSubjectList() {
             setFilterClassId(e.target.value);
             setFilterStreamId('');
           }}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All Classes</option>
           {classes.map((c) => (
@@ -328,7 +328,7 @@ export default function ClassSubjectList() {
           value={filterStreamId}
           onChange={(e) => setFilterStreamId(e.target.value)}
           disabled={!filterClassId}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-400"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-black"
         >
           <option value="">All Streams</option>
           {streamsForClass(filterClassId).map((s) => (
@@ -338,7 +338,7 @@ export default function ClassSubjectList() {
         <select
           value={filterYearId}
           onChange={(e) => setFilterYearId(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
           <option value="">All Years</option>
           {years.map((y) => (
@@ -347,13 +347,13 @@ export default function ClassSubjectList() {
         </select>
       </div>
 
-      {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
+      {loading && <p className="mt-6 text-sm text-black">Loading...</p>}
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
       {!loading && !error && (
         <div className="mt-6 space-y-6">
           {groupedAssignments.length === 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-400 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-black shadow-sm">
               No subject allocations yet.
             </div>
           )}
@@ -364,13 +364,13 @@ export default function ClassSubjectList() {
               className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
             >
               <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-                <h3 className="text-sm font-semibold text-slate-900">{group.className}</h3>
-                <span className="text-xs font-medium text-slate-500">
+                <h3 className="text-sm font-semibold text-black">{group.className}</h3>
+                <span className="text-xs font-medium text-black">
                   {group.items.length} {group.items.length === 1 ? 'allocation' : 'allocations'}
                 </span>
               </div>
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-black">
                   <tr>
                     <th className="px-4 py-2 font-medium">Teacher</th>
                     <th className="px-4 py-2 font-medium">Subject</th>
@@ -382,38 +382,38 @@ export default function ClassSubjectList() {
                 <tbody className="divide-y divide-slate-100">
                   {group.items.map((a) => (
                     <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 text-black">
                         {editingTeacherId === a.id ? (
                           <div className="flex items-center gap-2">
                             <select
                               value={teacherDraft}
                               onChange={(e) => setTeacherDraft(e.target.value)}
-                              className="rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                              className="rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             >
                               <option value="">-- Not assigned yet --</option>
                               {teachers.map((t) => (
                                 <option key={t.id} value={t.id}>{t.full_name}</option>
                               ))}
                             </select>
-                            <button onClick={() => saveTeacher(a.id)} className="text-teal-600 hover:underline">
+                            <button onClick={() => saveTeacher(a.id)} className="text-blue-600 hover:underline">
                               Save
                             </button>
-                            <button onClick={cancelEditTeacher} className="text-slate-500 hover:underline">
+                            <button onClick={cancelEditTeacher} className="text-black hover:underline">
                               Cancel
                             </button>
                           </div>
                         ) : (
-                          a.Teacher?.full_name || <span className="text-slate-400">Not assigned yet</span>
+                          a.Teacher?.full_name || <span className="text-black">Not assigned yet</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{a.Subject?.name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {a.Stream?.name || <span className="text-slate-400">All Streams</span>}
+                      <td className="px-4 py-3 font-medium text-black">{a.Subject?.name || '—'}</td>
+                      <td className="px-4 py-3 text-black">
+                        {a.Stream?.name || <span className="text-black">All Streams</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{a.AcademicYear?.year_name || '—'}</td>
+                      <td className="px-4 py-3 text-black">{a.AcademicYear?.year_name || '—'}</td>
                       <td className="px-4 py-3">
                         {editingTeacherId !== a.id && (
-                          <button onClick={() => startEditTeacher(a)} className="text-teal-600 hover:underline">
+                          <button onClick={() => startEditTeacher(a)} className="text-blue-600 hover:underline">
                             Change Teacher
                           </button>
                         )}

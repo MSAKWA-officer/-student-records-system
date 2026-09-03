@@ -141,7 +141,7 @@ export default function EnrollmentList() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       {routeClassId && (
         <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
           <Link to="/dashboard/enrollments" className="hover:underline">Class Enrollments</Link>
@@ -158,7 +158,7 @@ export default function EnrollmentList() {
         </div>
         <button
           onClick={showForm ? closeForm : openAddForm}
-          className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
         >
           {showForm ? 'Close' : '+ Enroll Student'}
         </button>
@@ -185,7 +185,7 @@ export default function EnrollmentList() {
           <select
             value={filterYear}
             onChange={(e) => setFilterYear(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All Years</option>
             {academicYears.map((y) => (
@@ -201,7 +201,7 @@ export default function EnrollmentList() {
             value={filterClass}
             onChange={(e) => setFilterClass(e.target.value)}
             disabled={Boolean(routeClassId)}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-50 disabled:text-slate-500"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
           >
             <option value="">All Classes</option>
             {classes.map((c) => (
@@ -214,7 +214,7 @@ export default function EnrollmentList() {
         {filterClass && (
           <Link
             to={`/dashboard/students?class_id=${filterClass}`}
-            className="rounded-md border border-teal-200 px-3 py-1.5 text-xs font-semibold text-teal-600 transition hover:bg-teal-50"
+            className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
           >
             View this class's students
           </Link>
@@ -238,7 +238,7 @@ export default function EnrollmentList() {
                 value={form.student_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Student --</option>
                 {students.map((s) => (
@@ -255,7 +255,7 @@ export default function EnrollmentList() {
                 value={form.academic_year_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Year --</option>
                 {academicYears.map((y) => (
@@ -272,7 +272,7 @@ export default function EnrollmentList() {
                 value={form.school_class_id}
                 onChange={handleFormChange}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Class --</option>
                 {classes.map((c) => (
@@ -289,7 +289,7 @@ export default function EnrollmentList() {
                 value={form.stream_id}
                 onChange={handleFormChange}
                 disabled={!form.school_class_id}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-100"
               >
                 <option value="">-- None --</option>
                 {streamsForSelectedClass.map((st) => (
@@ -303,7 +303,7 @@ export default function EnrollmentList() {
           <button
             type="submit"
             disabled={saving}
-            className="mt-5 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+            className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Enrollment'}
           </button>
@@ -335,7 +335,7 @@ export default function EnrollmentList() {
                     {en.SchoolClass ? (
                       <Link
                         to={`/dashboard/students?class_id=${en.SchoolClass.id}`}
-                        className="rounded-md border border-teal-200 px-2.5 py-1 text-xs font-semibold text-teal-600 transition hover:bg-teal-50"
+                        className="rounded-md border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
                         title={`View students enrolled in ${en.SchoolClass.name}`}
                       >
                         {en.SchoolClass.name}

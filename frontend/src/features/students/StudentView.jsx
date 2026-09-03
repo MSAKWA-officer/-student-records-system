@@ -62,8 +62,8 @@ export default function StudentView() {
   if (!student) return null;
 
   return (
-    <div className="p-8">
-      <Link to={backTo} className="text-sm text-teal-600 hover:underline">
+    <div className="p-4">
+      <Link to={backTo} className="text-sm text-blue-600 hover:underline">
         ← Back
       </Link>
 
@@ -77,15 +77,15 @@ export default function StudentView() {
           </span>
         </div>
 
-        <Section title="Student Information">
+        <Section>
+          <SubHeading>Student Information</SubHeading>
           <Row label="Admission Number" value={student.admission_number} />
           <Row label="Gender" value={student.gender === 'male' ? 'Male' : 'Female'} />
           <Row label="Date of Birth" value={student.date_of_birth} />
           <Row label="Admission Date" value={student.admission_date} />
           <Row label="Address" value={student.address} />
-        </Section>
 
-        <Section title="Parent/Guardian Information">
+          <SubHeading>Parent/Guardian Information</SubHeading>
           <Row label="Parent/Guardian Name" value={student.guardian_name} />
           <Row label="Phone Number" value={student.guardian_phone} />
           <Row label="Relationship" value={student.guardian_relationship} />
@@ -115,7 +115,7 @@ export default function StudentView() {
           </Link>
           <Link
             to={`/dashboard/students/${id}/edit`}
-            className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
             Edit
           </Link>
@@ -160,7 +160,7 @@ export default function StudentView() {
                           required
                           value={loginForm.email}
                           onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <div>
@@ -172,13 +172,13 @@ export default function StudentView() {
                           placeholder="At least 8 characters"
                           value={loginForm.password}
                           onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={creatingLogin}
-                        className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                       >
                         {creatingLogin ? 'Creating...' : 'Create Login'}
                       </button>
@@ -194,14 +194,19 @@ export default function StudentView() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ children }) {
   return (
-    <div className="mt-6">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</h4>
-      <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white px-4 shadow-sm">
-        {children}
-      </div>
+    <div className="mt-6 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white px-4 shadow-sm">
+      {children}
     </div>
+  );
+}
+
+function SubHeading({ children }) {
+  return (
+    <h4 className="pt-4 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400 first:pt-3.5">
+      {children}
+    </h4>
   );
 }
 

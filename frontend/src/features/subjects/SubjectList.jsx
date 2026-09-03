@@ -170,15 +170,15 @@ export default function SubjectList() {
   const levelLabels = { primary: 'Primary', secondary: 'Secondary', both: 'Both' };
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div>
-        <h2 className="text-xl font-semibold text-slate-900">Subjects by Class</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="text-xl font-semibold text-black">Subjects by Class</h2>
+        <p className="mt-1 text-sm text-black">
           Select a class below to register subjects for it and see its subject list.
         </p>
       </div>
 
-      {loadingClasses && <p className="mt-6 text-sm text-slate-500">Loading classes...</p>}
+      {loadingClasses && <p className="mt-6 text-sm text-black">Loading classes...</p>}
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
       {!loadingClasses && !currentYear && (
         <p className="mt-4 text-sm text-amber-600">
@@ -194,8 +194,8 @@ export default function SubjectList() {
               onClick={() => selectClass(c.id)}
               className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                 String(classId) === String(c.id)
-                  ? 'bg-teal-600 text-white'
-                  : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-slate-300 bg-white text-black hover:bg-slate-50'
               }`}
             >
               {c.name}
@@ -205,25 +205,25 @@ export default function SubjectList() {
       )}
 
       {!loadingClasses && classes.length === 0 && (
-        <p className="mt-6 text-sm text-slate-400">No classes have been registered yet.</p>
+        <p className="mt-6 text-sm text-black">No classes have been registered yet.</p>
       )}
 
       {classId && (
         <div className="mt-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-slate-900">Subjects of {selectedClass?.name}</h3>
+            <h3 className="text-sm font-semibold text-black">Subjects of {selectedClass?.name}</h3>
             <div className="flex flex-wrap gap-3">
               <input
                 placeholder="Search subject name or code..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               {canEdit && (
                 <button
                   onClick={showForm ? closeForm : openAddForm}
                   disabled={!currentYear}
-                  className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                 >
                   {showForm ? 'Close' : `+ Add Subject to ${selectedClass?.name}`}
                 </button>
@@ -236,7 +236,7 @@ export default function SubjectList() {
               onSubmit={handleSubmit}
               className="mt-4 max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
             >
-              <h4 className="mb-4 text-sm font-semibold text-slate-900">
+              <h4 className="mb-4 text-sm font-semibold text-black">
                 New Subject — {selectedClass?.name}
               </h4>
               {formError && (
@@ -244,33 +244,33 @@ export default function SubjectList() {
               )}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Subject Name *</label>
+                  <label className="mb-1 block text-sm font-medium text-black">Subject Name *</label>
                   <input
                     name="name"
                     value={form.name}
                     onChange={handleFormChange}
                     placeholder="e.g. Mathematics"
                     required
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Code</label>
+                  <label className="mb-1 block text-sm font-medium text-black">Code</label>
                   <input
                     name="code"
                     value={form.code}
                     onChange={handleFormChange}
                     placeholder="e.g. MATH"
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Education Level *</label>
+                  <label className="mb-1 block text-sm font-medium text-black">Education Level *</label>
                   <select
                     name="education_level"
                     value={form.education_level}
                     onChange={handleFormChange}
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="primary">Primary</option>
                     <option value="secondary">Secondary</option>
@@ -281,22 +281,22 @@ export default function SubjectList() {
               <button
                 type="submit"
                 disabled={saving}
-                className="mt-5 rounded-md bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-500 disabled:opacity-60"
+                className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
               >
                 {saving ? 'Saving...' : `Save Subject to ${selectedClass?.name}`}
               </button>
             </form>
           )}
 
-          {loadingAssignments && <p className="mt-4 text-sm text-slate-500">Loading subjects...</p>}
+          {loadingAssignments && <p className="mt-4 text-sm text-black">Loading subjects...</p>}
 
           {!loadingAssignments && (
             <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-black">
                 {filteredSubjects.length} subjects
               </div>
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
                   <tr>
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Code</th>
@@ -307,9 +307,9 @@ export default function SubjectList() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredSubjects.map((entry) => (
                     <tr key={entry.subject.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{entry.subject.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{entry.subject.code || '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 font-medium text-black">{entry.subject.name}</td>
+                      <td className="px-4 py-3 text-black">{entry.subject.code || '—'}</td>
+                      <td className="px-4 py-3 text-black">
                         {levelLabels[entry.subject.education_level] || entry.subject.education_level}
                       </td>
                       {canEdit && (
@@ -323,7 +323,7 @@ export default function SubjectList() {
                   ))}
                   {filteredSubjects.length === 0 && (
                     <tr>
-                      <td colSpan={canEdit ? 4 : 3} className="px-4 py-8 text-center text-slate-400">
+                      <td colSpan={canEdit ? 4 : 3} className="px-4 py-8 text-center text-black">
                         No subjects registered for this class yet.
                       </td>
                     </tr>

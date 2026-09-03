@@ -94,9 +94,9 @@ export default function StudentReportCard() {
   const division = computeDivision(totalPoints, gradedSubjects.length);
 
   return (
-    <div className="p-8">
+    <div className="p-4">
       <div className="print:hidden">
-        <Link to={backTo} className="text-sm text-teal-600 hover:underline">
+        <Link to={backTo} className="text-sm text-blue-600 hover:underline">
           {backLabel}
         </Link>
 
@@ -109,7 +109,7 @@ export default function StudentReportCard() {
               <select
                 value={academicYearId}
                 onChange={(e) => setAcademicYearId(e.target.value)}
-                className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500"
+                className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
               >
                 {years.map((y) => (
                   <option key={y.id} value={y.id}>{y.year_name}</option>
@@ -121,7 +121,7 @@ export default function StudentReportCard() {
               <select
                 value={termId}
                 onChange={(e) => setTermId(e.target.value)}
-                className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-teal-500"
+                className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
               >
                 <option value="">Whole Year (All Terms)</option>
                 {terms.map((t) => (
@@ -132,7 +132,7 @@ export default function StudentReportCard() {
             {report && (
               <button
                 onClick={() => window.print()}
-                className="rounded-md bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-500"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
               >
                 Print
               </button>
