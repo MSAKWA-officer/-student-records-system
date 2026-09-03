@@ -24,34 +24,16 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { academicYearsApi } from '../features/academicYears/academicYearsApi';
 import { termsApi } from '../features/terms/termsApi';
-import { classesApi } from '../features/classes/classesApi';
 
 // Base nav tree. Items can be a leaf (has `to`) or a group (has `children`).
 // Groups can be nested up to 3 levels deep, e.g.
 //   Examination Result > Results > View Results
-//   Examination Result > Result Slips > Form 1
-// The "Result Slips" children are populated at runtime from the real class
-// list (see buildNavConfig below), since class names are school-specific data.
-function buildNavConfig(classes) {
-  const classSlipLinks = (classes || []).map((c) => ({
-    to: `/dashboard/results/slips/${c.id}`,
-    label: c.name,
-  }));
-  const classReportLinks = (classes || []).map((c) => ({
-    to: `/dashboard/reports/${c.id}`,
-    label: c.name,
-  }));
-  const classAttendanceLinks = (classes || []).map((c) => ({
-    to: `/dashboard/attendance/${c.id}`,
-    label: c.name,
-  }));
-  const classEnrollmentLinks = (classes || []).map((c) => ({
-    to: `/dashboard/enrollments/${c.id}`,
-    label: c.name,
-  }));
-
+// Reports, Attendance and Class Enrollments are now plain single links
+// (their per-class sub-items were removed), and the Result Slips section
+// has been removed entirely.
+function buildNavConfig() {
   return [
-    { to: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { to: '/dashboard/students', label: 'Students', icon: Users },
     { to: '/dashboard/classes', label: 'Classes', icon: Layers, roles: ['admin', 'headteacher', 'staff'] },
     { to: '/dashboard/subjects', label: 'Subjects', icon: BookOpen, roles: ['admin', 'headteacher', 'staff'] },
@@ -71,7 +53,7 @@ function buildNavConfig(classes) {
       ],
     },
     {
-      label: 'Examination Result',
+      label: 'Examination',
       icon: ClipboardList,
       children: [
         { to: '/dashboard/exams', label: 'Exams' },
@@ -82,27 +64,15 @@ function buildNavConfig(classes) {
             { to: '/dashboard/results/upload', label: 'Upload Results' },
           ],
         },
-        {
-          label: 'Result Slips',
-          children: [{ to: '/dashboard/results/slips', label: 'All Classes' }, ...classSlipLinks],
-        },
-        {
-          label: 'Reports',
-          roles: ['admin', 'headteacher'],
-          children: [{ to: '/dashboard/reports', label: 'All Classes' }, ...classReportLinks],
-        },
+        { to: '/dashboard/reports', label: 'Reports', roles: ['admin', 'headteacher'] },
       ],
     },
+    { to: '/dashboard/attendance', label: 'Attendance', icon: CalendarCheck2 },
     {
-      label: 'Attendance',
-      icon: CalendarCheck2,
-      children: [{ to: '/dashboard/attendance', label: 'All Classes' }, ...classAttendanceLinks],
-    },
-    {
+      to: '/dashboard/enrollments',
       label: 'Class Enrollments',
       icon: UsersRound,
       roles: ['admin', 'headteacher'],
-      children: [{ to: '/dashboard/enrollments', label: 'All Classes' }, ...classEnrollmentLinks],
     },
     { to: '/dashboard/users', label: 'Users', icon: ShieldCheck, roles: ['admin'] },
   ];
@@ -114,7 +84,7 @@ function buildNavConfig(classes) {
 function buildStudentNavConfig(user) {
   const sid = user?.student_id;
   return [
-    { to: '/dashboard', label: 'Home', icon: LayoutDashboard, exact: true },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { to: `/dashboard/students/${sid}/report-card`, label: 'My Report Card', icon: ClipboardList },
     { to: `/dashboard/students/${sid}/result-slip`, label: 'My Result Slip', icon: ListChecks },
     { to: `/dashboard/students/${sid}/attendance`, label: 'My Attendance', icon: CalendarCheck2 },
@@ -151,16 +121,14 @@ export default function Dashboard() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState({});
   const [currentYear, setCurrentYear] = useState(null);
   const [currentTerm, setCurrentTerm] = useState(null);
-  const [classes, setClasses] = useState([]);
 
   const isStudent = user?.role === 'student';
   const rawNav = useMemo(
-    () => (isStudent ? buildStudentNavConfig(user) : buildNavConfig(classes)),
-    [classes, isStudent, user]
+    () => (isStudent ? buildStudentNavConfig(user) : buildNavConfig()),
+    [isStudent, user]
   );
   const visibleNav = useMemo(
     () => (isStudent ? rawNav : filterNavByRole(rawNav, user?.role)),
@@ -168,8 +136,8 @@ export default function Dashboard() {
   );
 
   // Any group (at any depth) whose active descendant matches the current
-  // path should start expanded, so navigating directly to a deep link (e.g.
-  // a bookmarked class result-slip page) still shows an open trail.
+  // path should start expanded, so navigating directly to a deep link
+  // still shows an open trail.
   useEffect(() => {
     setOpenGroups((prev) => {
       const next = { ...prev };
@@ -190,17 +158,11 @@ export default function Dashboard() {
     if (isStudent) return; // student nav/breadcrumb don't need this lookup data
     (async () => {
       try {
-        const [yearsRes, termsRes, classesRes] = await Promise.all([
-          academicYearsApi.getAll(),
-          termsApi.getAll(),
-          classesApi.getAll(),
-        ]);
+        const [yearsRes, termsRes] = await Promise.all([academicYearsApi.getAll(), termsApi.getAll()]);
         setCurrentYear(yearsRes.data.find((y) => y.is_current) || null);
         setCurrentTerm(termsRes.data.find((t) => t.is_current) || null);
-        setClasses(classesRes.data || []);
       } catch {
-        // Non-critical for the shell — breadcrumb badge and class sub-menu
-        // simply stay empty/hidden if this fails.
+        // Non-critical for the shell — breadcrumb badge simply stays empty if this fails.
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,42 +217,30 @@ export default function Dashboard() {
             <Bell size={19} />
           </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2 hover:bg-white/10"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold uppercase">
-                {user?.full_name?.charAt(0) || 'U'}
-              </span>
-              <span className="hidden text-sm font-semibold sm:block">{user?.full_name}</span>
-              <ChevronDown size={16} className="hidden sm:block" />
-            </button>
-
-            {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md border border-slate-200 bg-white py-1 text-slate-700 shadow-lg">
-                <div className="border-b border-slate-100 px-3 py-2">
-                  <p className="truncate text-sm font-semibold text-slate-900">{user?.full_name}</p>
-                  <p className="truncate text-xs capitalize text-slate-500">{user?.role}</p>
-                </div>
-                <button
-                  onClick={logout}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50"
-                >
-                  <LogOut size={15} /> Log out
-                </button>
-              </div>
-            )}
+          <div className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-bold uppercase">
+              {user?.full_name?.charAt(0) || 'U'}
+            </span>
+            <span className="hidden text-sm font-semibold sm:block">{user?.full_name}</span>
           </div>
+
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 rounded-full p-2 hover:bg-white/10"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut size={19} />
+          </button>
         </div>
       </header>
 
       <div className="flex flex-1">
-        {/* Sidebar */}
+        {/* Sidebar — narrower than before (w-56 instead of w-64) */}
         <aside
           className={`fixed inset-y-0 top-16 z-20 flex shrink-0 flex-col border-r border-slate-200 bg-white transition-all duration-200 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:translate-x-0 ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
-          } ${collapsed ? 'w-64 lg:w-[68px]' : 'w-64'}`}
+          } ${collapsed ? 'w-56 lg:w-16' : 'w-56'}`}
         >
           <div className={`flex items-center gap-2 px-4 py-3 ${collapsed ? 'lg:justify-center lg:px-0' : 'justify-between'}`}>
             <span
@@ -347,21 +297,21 @@ export default function Dashboard() {
           <div className="sims-breadcrumb justify-between">
             <div className="flex items-center gap-1.5">
               <Link to="/dashboard" className="hover:text-blue-700">
-                Home
+                Dashboard
               </Link>
               {activeTrail.map((label, idx) => (
                 <span key={`${label}-${idx}`} className="flex items-center gap-1.5">
                   <ChevronRight size={13} />
-                  <span className={idx === activeTrail.length - 1 ? 'font-semibold text-slate-700' : ''}>
+                  <span className={idx === activeTrail.length - 1 ? 'font-semibold text-black' : 'text-black'}>
                     {label}
                   </span>
                 </span>
               ))}
             </div>
             {currentYear && (
-              <span className="hidden text-xs font-medium text-slate-500 sm:block">
+              <span className="hidden text-xs font-medium text-black sm:block">
                 Active Academic Year:{' '}
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-black">
                   {currentYear.year_name}
                   {currentTerm ? ` — ${currentTerm.name}` : ''}
                 </span>
@@ -373,8 +323,8 @@ export default function Dashboard() {
             <Outlet />
           </main>
 
-          <footer className="border-t border-slate-200 bg-white px-6 py-3 text-center text-xs text-slate-500">
-            © 2024–{new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
+          <footer className="border-t border-slate-200 bg-white px-6 py-3 text-center text-xs text-black">
+            © {new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
           </footer>
         </div>
       </div>
@@ -384,7 +334,7 @@ export default function Dashboard() {
 
 // Renders one nav entry — a plain link (leaf) or a toggleable group, and
 // recurses into its children. `depth` controls indentation/size so nested
-// sub-sub-items (e.g. individual classes under "Result Slips") read clearly.
+// sub-items (e.g. "View Results" under "Results") read clearly.
 function NavNode({ item, depth, pathPrefix, pathname, openGroups, toggleGroup, onNavigate, collapsed }) {
   const key = `${pathPrefix}${item.label || item.to}`;
   // Labels/chevrons hide only at the lg breakpoint when the sidebar is

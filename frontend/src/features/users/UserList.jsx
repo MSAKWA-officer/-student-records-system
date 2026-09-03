@@ -143,223 +143,223 @@ export default function UserList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">User Management</h2>
-          <p className="mt-1 text-sm text-slate-500">{users.length} accounts</p>
-        </div>
-        <button
-          onClick={showForm ? closeForm : openAddForm}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-        >
-          {showForm ? 'Close' : '+ Add User'}
-        </button>
-      </div>
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mt-5 max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-        >
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">
-            {editingId ? 'Edit User' : 'Add New User'}
-          </h3>
-          {formError && (
-            <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Full Name *</label>
-              <input
-                name="full_name"
-                value={form.full_name}
-                onChange={handleFormChange}
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Email *</label>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleFormChange}
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            {!editingId && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Password *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleFormChange}
-                  required
-                  minLength={8}
-                  placeholder="At least 8 characters"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            )}
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Role *</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r} className="capitalize">
-                    {r}
-                  </option>
-                ))}
-              </select>
-              {form.role === 'student' && (
-                <p className="mt-1 text-xs text-amber-600">
-                  This creates a login only. To link it to a specific student and let them view their own
-                  results, use the &quot;Student Portal Login&quot; section on that student&apos;s profile page
-                  instead.
-                </p>
-              )}
-              {form.role === 'teacher' && (
-                <p className="mt-1 text-xs text-amber-600">
-                  This creates a login only, not linked to a teacher record. To give an already-registered
-                  teacher a login, go to Teachers and use &quot;Create Login&quot; next to their name instead.
-                </p>
-              )}
-              {form.role === 'staff' && (
-                <p className="mt-1 text-xs text-amber-600">
-                  Staff accounts aren&apos;t linked to a registered profile in this system yet — this creates a
-                  plain login for general school staff (e.g. office/admin).
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Phone Number</label>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+      {/* Everything for this page — header, add/edit-user form, reset-password
+          form, filters, and the table — lives inside one card instead of
+          separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">User Management</h2>
+            <p className="mt-1 text-sm text-black">{users.length} accounts</p>
           </div>
           <button
-            type="submit"
-            disabled={saving}
-            className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+            onClick={showForm ? closeForm : openAddForm}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
-            {saving ? 'Saving...' : editingId ? 'Update User' : 'Save User'}
+            {showForm ? 'Close' : '+ Add User'}
           </button>
-        </form>
-      )}
+        </div>
 
-      {resetTargetId && (
-        <form
-          onSubmit={handleResetPassword}
-          className="mt-5 max-w-md rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm"
-        >
-          <h3 className="mb-3 text-sm font-semibold text-slate-900">Reset Password</h3>
-          {resetError && (
-            <div className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{resetError}</div>
-          )}
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="New password (at least 8 characters)"
-            required
-            minLength={8}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-          <div className="mt-3 flex gap-2">
+        {/* Add / edit user form */}
+        {showForm && (
+          <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
+            <h3 className="mb-4 text-sm font-semibold text-black">
+              {editingId ? 'Edit User' : 'Add New User'}
+            </h3>
+            {formError && (
+              <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
+            )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Full Name *</label>
+                <input
+                  name="full_name"
+                  value={form.full_name}
+                  onChange={handleFormChange}
+                  required
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleFormChange}
+                  required
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              {!editingId && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-black">Password *</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={handleFormChange}
+                    required
+                    minLength={8}
+                    placeholder="At least 8 characters"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Role *</label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r} value={r} className="capitalize">
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                {form.role === 'student' && (
+                  <p className="mt-1 text-xs text-black">
+                    This creates a login only. To link it to a specific student and let them view their own
+                    results, use the &quot;Student Portal Login&quot; section on that student&apos;s profile page
+                    instead.
+                  </p>
+                )}
+                {form.role === 'teacher' && (
+                  <p className="mt-1 text-xs text-black">
+                    This creates a login only, not linked to a teacher record. To give an already-registered
+                    teacher a login, go to Teachers and use &quot;Create Login&quot; next to their name instead.
+                  </p>
+                )}
+                {form.role === 'staff' && (
+                  <p className="mt-1 text-xs text-black">
+                    Staff accounts aren&apos;t linked to a registered profile in this system yet — this creates a
+                    plain login for general school staff (e.g. office/admin).
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Phone Number</label>
+                <input
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
             <button
               type="submit"
-              disabled={resetting}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+              disabled={saving}
+              className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
             >
-              {resetting ? 'Saving...' : 'Set Password'}
+              {saving ? 'Saving...' : editingId ? 'Update User' : 'Save User'}
             </button>
-            <button
-              type="button"
-              onClick={() => setResetTargetId(null)}
-              className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+          </form>
+        )}
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <input
-          placeholder="Search name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        />
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">All roles</option>
-          {ROLES.map((r) => (
-            <option key={r} value={r} className="capitalize">
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
+        {/* Reset password form */}
+        {resetTargetId && (
+          <form onSubmit={handleResetPassword} className="border-b border-slate-100 bg-amber-50 px-6 py-5">
+            <h3 className="mb-3 text-sm font-semibold text-black">Reset Password</h3>
+            {resetError && (
+              <div className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{resetError}</div>
+            )}
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="New password (at least 8 characters)"
+              required
+              minLength={8}
+              className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="submit"
+                disabled={resetting}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+              >
+                {resetting ? 'Saving...' : 'Set Password'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setResetTargetId(null)}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-black hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
 
-      {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+        {/* Search & filter — search bar kept narrow instead of stretching full width */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-6 py-4">
+          <input
+            placeholder="Search name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="ml-auto rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">All roles</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r} className="capitalize">
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      {!loading && !error && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {loading && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading...</p>}
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
+
+        {/* Table */}
+        {!loading && !error && (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
               <tr>
-                <th className="px-4 py-3 font-medium">Full Name</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-6 py-3 font-medium">Full Name</th>
+                <th className="px-6 py-3 font-medium">Email</th>
+                <th className="px-6 py-3 font-medium">Phone</th>
+                <th className="px-6 py-3 font-medium">Role</th>
+                <th className="px-6 py-3 font-medium">Status</th>
+                <th className="px-6 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                  <td className="px-6 py-3 font-medium text-black">
                     {u.full_name}
                     {u.id === currentUser?.id && (
-                      <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
+                      <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-black">
                         You
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{u.email}</td>
-                  <td className="px-4 py-3 text-slate-600">{u.phone || '—'}</td>
-                  <td className="px-4 py-3 text-slate-600 capitalize">{u.role}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3 text-black">{u.email}</td>
+                  <td className="px-6 py-3 text-black">{u.phone || '—'}</td>
+                  <td className="px-6 py-3 capitalize text-black">{u.role}</td>
+                  <td className="px-6 py-3">
                     <button
                       onClick={() => toggleActive(u)}
                       disabled={u.id === currentUser?.id}
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        u.is_active
-                          ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium text-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        u.is_active ? 'bg-green-50 hover:bg-green-100' : 'bg-slate-100 hover:bg-slate-200'
                       }`}
                     >
                       {u.is_active ? 'Active' : 'Inactive'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="whitespace-nowrap px-6 py-3">
                     <button onClick={() => openEditForm(u)} className="text-blue-600 hover:underline">
                       Edit
                     </button>
@@ -383,15 +383,15 @@ export default function UserList() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan="6" className="px-6 py-10 text-center text-black">
                     No users yet.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

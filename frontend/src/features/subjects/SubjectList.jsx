@@ -171,169 +171,177 @@ export default function SubjectList() {
 
   return (
     <div className="p-4">
-      <div>
-        <h2 className="text-xl font-semibold text-black">Subjects by Class</h2>
-        <p className="mt-1 text-sm text-black">
-          Select a class below to register subjects for it and see its subject list.
-        </p>
-      </div>
-
-      {loadingClasses && <p className="mt-6 text-sm text-black">Loading classes...</p>}
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-      {!loadingClasses && !currentYear && (
-        <p className="mt-4 text-sm text-amber-600">
-          No current academic year is set up yet — please add one before registering subjects.
-        </p>
-      )}
-
-      {!loadingClasses && classes.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          {classes.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => selectClass(c.id)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                String(classId) === String(c.id)
-                  ? 'bg-blue-600 text-white'
-                  : 'border border-slate-300 bg-white text-black hover:bg-slate-50'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+      {/* Everything for this page — header, class picker, add-subject form,
+          and the table — lives inside one card instead of separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Header */}
+        <div className="border-b border-slate-100 px-6 py-5">
+          <h2 className="text-xl font-semibold text-black">Subjects by Class</h2>
+          <p className="mt-1 text-sm text-black">
+            Select a class below to register subjects for it and see its subject list.
+          </p>
         </div>
-      )}
 
-      {!loadingClasses && classes.length === 0 && (
-        <p className="mt-6 text-sm text-black">No classes have been registered yet.</p>
-      )}
+        {loadingClasses && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading classes...</p>}
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
+        {!loadingClasses && !currentYear && (
+          <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">
+            No current academic year is set up yet — please add one before registering subjects.
+          </p>
+        )}
 
-      {classId && (
-        <div className="mt-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-black">Subjects of {selectedClass?.name}</h3>
-            <div className="flex flex-wrap gap-3">
-              <input
-                placeholder="Search subject name or code..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-              {canEdit && (
-                <button
-                  onClick={showForm ? closeForm : openAddForm}
-                  disabled={!currentYear}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
-                >
-                  {showForm ? 'Close' : `+ Add Subject to ${selectedClass?.name}`}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {canEdit && showForm && (
-            <form
-              onSubmit={handleSubmit}
-              className="mt-4 max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-            >
-              <h4 className="mb-4 text-sm font-semibold text-black">
-                New Subject — {selectedClass?.name}
-              </h4>
-              {formError && (
-                <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-              )}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-black">Subject Name *</label>
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleFormChange}
-                    placeholder="e.g. Mathematics"
-                    required
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-black">Code</label>
-                  <input
-                    name="code"
-                    value={form.code}
-                    onChange={handleFormChange}
-                    placeholder="e.g. MATH"
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-black">Education Level *</label>
-                  <select
-                    name="education_level"
-                    value={form.education_level}
-                    onChange={handleFormChange}
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="primary">Primary</option>
-                    <option value="secondary">Secondary</option>
-                    <option value="both">Both</option>
-                  </select>
-                </div>
-              </div>
+        {/* Class picker */}
+        {!loadingClasses && classes.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-5">
+            {classes.map((c) => (
               <button
-                type="submit"
-                disabled={saving}
-                className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+                key={c.id}
+                onClick={() => selectClass(c.id)}
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+                  String(classId) === String(c.id)
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-slate-300 bg-white text-black hover:bg-slate-50'
+                }`}
               >
-                {saving ? 'Saving...' : `Save Subject to ${selectedClass?.name}`}
+                {c.name}
               </button>
-            </form>
-          )}
+            ))}
+          </div>
+        )}
 
-          {loadingAssignments && <p className="mt-4 text-sm text-black">Loading subjects...</p>}
+        {!loadingClasses && classes.length === 0 && (
+          <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">No classes have been registered yet.</p>
+        )}
 
-          {!loadingAssignments && (
-            <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-black">
-                {filteredSubjects.length} subjects
+        {classId && (
+          <>
+            {/* Selected class toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+              <h3 className="text-sm font-semibold text-black">Subjects of {selectedClass?.name}</h3>
+              <div className="flex flex-wrap gap-3">
+                <input
+                  placeholder="Search subject name or code..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+                {canEdit && (
+                  <button
+                    onClick={showForm ? closeForm : openAddForm}
+                    disabled={!currentYear}
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+                  >
+                    {showForm ? 'Close' : `+ Add Subject to ${selectedClass?.name}`}
+                  </button>
+                )}
               </div>
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Code</th>
-                    <th className="px-4 py-3 font-medium">Education Level</th>
-                    {canEdit && <th className="px-4 py-3 font-medium">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredSubjects.map((entry) => (
-                    <tr key={entry.subject.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-black">{entry.subject.name}</td>
-                      <td className="px-4 py-3 text-black">{entry.subject.code || '—'}</td>
-                      <td className="px-4 py-3 text-black">
-                        {levelLabels[entry.subject.education_level] || entry.subject.education_level}
-                      </td>
-                      {canEdit && (
-                        <td className="px-4 py-3">
-                          <button onClick={() => handleRemove(entry)} className="text-red-600 hover:underline">
-                            Remove from {selectedClass?.name}
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                  {filteredSubjects.length === 0 && (
-                    <tr>
-                      <td colSpan={canEdit ? 4 : 3} className="px-4 py-8 text-center text-black">
-                        No subjects registered for this class yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Add subject form */}
+            {canEdit && showForm && (
+              <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
+                <h4 className="mb-4 text-sm font-semibold text-black">
+                  New Subject — {selectedClass?.name}
+                </h4>
+                {formError && (
+                  <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
+                )}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-black">Subject Name *</label>
+                    <input
+                      name="name"
+                      value={form.name}
+                      onChange={handleFormChange}
+                      placeholder="e.g. Mathematics"
+                      required
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-black">Code</label>
+                    <input
+                      name="code"
+                      value={form.code}
+                      onChange={handleFormChange}
+                      placeholder="e.g. MATH"
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-black">Education Level *</label>
+                    <select
+                      name="education_level"
+                      value={form.education_level}
+                      onChange={handleFormChange}
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="primary">Primary</option>
+                      <option value="secondary">Secondary</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+                >
+                  {saving ? 'Saving...' : `Save Subject to ${selectedClass?.name}`}
+                </button>
+              </form>
+            )}
+
+            {loadingAssignments && (
+              <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading subjects...</p>
+            )}
+
+            {/* Table */}
+            {!loadingAssignments && (
+              <>
+                <div className="border-b border-slate-100 bg-slate-50 px-6 py-2 text-xs text-black">
+                  {filteredSubjects.length} subjects
+                </div>
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
+                    <tr>
+                      <th className="px-6 py-3 font-medium">Name</th>
+                      <th className="px-6 py-3 font-medium">Code</th>
+                      <th className="px-6 py-3 font-medium">Education Level</th>
+                      {canEdit && <th className="px-6 py-3 font-medium">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredSubjects.map((entry) => (
+                      <tr key={entry.subject.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-3 font-medium text-black">{entry.subject.name}</td>
+                        <td className="px-6 py-3 text-black">{entry.subject.code || '—'}</td>
+                        <td className="px-6 py-3 text-black">
+                          {levelLabels[entry.subject.education_level] || entry.subject.education_level}
+                        </td>
+                        {canEdit && (
+                          <td className="px-6 py-3">
+                            <button onClick={() => handleRemove(entry)} className="text-red-600 hover:underline">
+                              Remove from {selectedClass?.name}
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    {filteredSubjects.length === 0 && (
+                      <tr>
+                        <td colSpan={canEdit ? 4 : 3} className="px-6 py-10 text-center text-black">
+                          No subjects registered for this class yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
