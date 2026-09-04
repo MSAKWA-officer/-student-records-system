@@ -327,11 +327,7 @@ export default function Dashboard() {
           </main>
 
           <footer className="border-t border-slate-200 bg-white px-6 py-3 text-center text-xs text-black">
-<<<<<<< HEAD
             © 2024–{new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
-=======
-            © {new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
->>>>>>> c7076e3e43f61242d0a1e422c128f859471acdf5
           </footer>
         </div>
       </div>
