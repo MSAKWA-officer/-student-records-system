@@ -94,119 +94,117 @@ export default function AcademicYearList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Academic Years</h2>
-          <p className="mt-1 text-sm text-slate-500">{years.length} registered</p>
+      {/* Everything for this page — header, add/edit-year form, and the
+          table — lives inside one card instead of separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">Academic Years</h2>
+            <p className="mt-1 text-sm text-black">{years.length} registered</p>
+          </div>
+          <button
+            onClick={showForm ? closeForm : openAddForm}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+          >
+            {showForm ? 'Close' : '+ Add Year'}
+          </button>
         </div>
-        <button
-          onClick={showForm ? closeForm : openAddForm}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-        >
-          {showForm ? 'Close' : '+ Add Year'}
-        </button>
-      </div>
 
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mt-5 max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-        >
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">
-            {editingId ? 'Edit Academic Year' : 'Add Academic Year'}
-          </h3>
-          {formError && (
-            <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Year *</label>
-              <input
-                name="year_name"
-                value={form.year_name}
-                onChange={handleFormChange}
-                placeholder="e.g. 2026"
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Start Date</label>
-              <input
-                type="date"
-                name="start_date"
-                value={form.start_date}
-                onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">End Date</label>
-              <input
-                type="date"
-                name="end_date"
-                value={form.end_date}
-                onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" name="is_current" checked={form.is_current} onChange={handleFormChange} />
-            This is the current academic year
-          </label>
-          <div className="mt-5 flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
-            >
-              {saving ? 'Saving...' : editingId ? 'Update Year' : 'Save Year'}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={closeForm}
-                className="text-sm font-medium text-slate-500 hover:underline"
-              >
-                Cancel
-              </button>
+        {/* Add / edit year form */}
+        {showForm && (
+          <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
+            <h3 className="mb-4 text-sm font-semibold text-black">
+              {editingId ? 'Edit Academic Year' : 'Add Academic Year'}
+            </h3>
+            {formError && (
+              <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
             )}
-          </div>
-        </form>
-      )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Year *</label>
+                <input
+                  name="year_name"
+                  value={form.year_name}
+                  onChange={handleFormChange}
+                  placeholder="e.g. 2026"
+                  required
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Start Date</label>
+                <input
+                  type="date"
+                  name="start_date"
+                  value={form.start_date}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">End Date</label>
+                <input
+                  type="date"
+                  name="end_date"
+                  value={form.end_date}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <label className="mt-4 flex items-center gap-2 text-sm text-black">
+              <input type="checkbox" name="is_current" checked={form.is_current} onChange={handleFormChange} />
+              This is the current academic year
+            </label>
+            <div className="mt-5 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : editingId ? 'Update Year' : 'Save Year'}
+              </button>
+              {editingId && (
+                <button type="button" onClick={closeForm} className="text-sm font-medium text-black hover:underline">
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        )}
 
-      {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+        {loading && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading...</p>}
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
 
-      {!loading && !error && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Table */}
+        {!loading && !error && (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
               <tr>
-                <th className="px-4 py-3 font-medium">Year</th>
-                <th className="px-4 py-3 font-medium">Start Date</th>
-                <th className="px-4 py-3 font-medium">End Date</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
+                <th className="px-6 py-3 font-medium">Year</th>
+                <th className="px-6 py-3 font-medium">Start Date</th>
+                <th className="px-6 py-3 font-medium">End Date</th>
+                <th className="px-6 py-3 font-medium">Status</th>
+                <th className="px-6 py-3 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {years.map((y) => (
                 <tr key={y.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{y.year_name}</td>
-                  <td className="px-4 py-3 text-slate-600">{y.start_date || '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{y.end_date || '—'}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3 font-medium text-black">{y.year_name}</td>
+                  <td className="px-6 py-3 text-black">{y.start_date || '—'}</td>
+                  <td className="px-6 py-3 text-black">{y.end_date || '—'}</td>
+                  <td className="px-6 py-3">
                     {y.is_current ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
+                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-black">
                         Current
                       </span>
                     ) : (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-black">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-6 py-3">
                     <button onClick={() => openEditForm(y)} className="text-blue-600 hover:underline">
                       Edit
                     </button>
@@ -219,15 +217,15 @@ export default function AcademicYearList() {
               ))}
               {years.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan="5" className="px-6 py-10 text-center text-black">
                     No academic years yet.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

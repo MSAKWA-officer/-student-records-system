@@ -103,151 +103,161 @@ export default function ReportsList() {
   const selectedClass = classes.find((c) => String(c.id) === String(classId));
 
   function handleExportExcel() {
-  const data = filteredStudents.map((s) => ({
-    'Admission Number': s.admission_number,
-    'Student': studentName(s),
-    'Stream': studentStream(s),
-  }));
-  const label = selectedClass?.name || 'Class';
-  exportToExcel(data, `${label}-Reports`, 'Reports');
-}
+    const data = filteredStudents.map((s) => ({
+      'Admission Number': s.admission_number,
+      'Student': studentName(s),
+      'Stream': studentStream(s),
+    }));
+    const label = selectedClass?.name || 'Class';
+    exportToExcel(data, `${label}-Reports`, 'Reports');
+  }
 
   return (
     <div className="p-4">
-      {routeClassId && (
-        <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
-          <Link to="/dashboard/reports" className="hover:underline">Reports</Link>
-          <span>/</span>
-          <span className="text-slate-700">{selectedClass?.name || '...'}</span>
-        </div>
-      )}
-
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">
-          {routeClassId ? `${selectedClass?.name || 'Class'} Reports` : 'Reports by Class'}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          {routeClassId
-            ? `Every student in ${selectedClass?.name || 'this class'}, each with a link to their full results report.`
-            : 'Choose a class below to see all its students, each with a link to their full results report.'}
-        </p>
-      </div>
-
-      {loadingClasses && <p className="mt-6 text-sm text-slate-500">Loading classes...</p>}
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-
-      {!routeClassId && !loadingClasses && classes.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          {classes.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => selectClass(c.id)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-                String(classId) === String(c.id)
-                  ? 'bg-blue-600 text-white'
-                  : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!loadingClasses && classes.length === 0 && (
-        <p className="mt-6 text-sm text-slate-400">No classes registered yet.</p>
-      )}
-
-      {classId && (
-        <div className="mt-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Students in {selectedClass?.name}
-              {streamId && streamsForSelectedClass.find((s) => String(s.id) === String(streamId))
-                ? ` — Stream ${streamsForSelectedClass.find((s) => String(s.id) === String(streamId)).name}`
-                : ''}
-            </h3>
-            <div className="no-print flex flex-wrap gap-3">
-              <button
-                onClick={handleExportExcel}
-                disabled={filteredStudents.length === 0}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                Export to Excel
-              </button>
-              <button
-                onClick={() => window.print()}
-                disabled={filteredStudents.length === 0}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                Print / PDF
-              </button>
-              <select
-                value={streamId}
-                onChange={(e) => setStreamId(e.target.value)}
-                disabled={streamsForSelectedClass.length === 0}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
-              >
-                <option value="">All Streams</option>
-                {streamsForSelectedClass.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <input
-                placeholder="Search by name or admission number..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+      {/* Everything for this page — breadcrumb, header, class picker,
+          toolbar (export/print/filters), and the table — lives inside one
+          card instead of separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Breadcrumb (only when reached via a class-specific link) */}
+        {routeClassId && (
+          <div className="flex items-center gap-2 border-b border-slate-100 px-6 pt-4 text-sm text-black">
+            <Link to="/dashboard/reports" className="hover:underline">Reports</Link>
+            <span>/</span>
+            <span className="pb-4 text-black">{selectedClass?.name || '...'}</span>
           </div>
+        )}
 
-          {loadingStudents && <p className="mt-4 text-sm text-slate-500">Loading students...</p>}
-
-          {!loadingStudents && (
-            <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">
-                {filteredStudents.length} students
-              </div>
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Admission Number</th>
-                    <th className="px-4 py-3 font-medium">Student</th>
-                    <th className="px-4 py-3 font-medium">Stream</th>
-                    <th className="px-4 py-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 text-slate-600">{s.admission_number}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{studentName(s)}</td>
-                      <td className="px-4 py-3 text-slate-600">{studentStream(s)}</td>
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/dashboard/students/${s.id}/report-card`}
-                          state={{ from: `${location.pathname}${location.search}` }}
-                          className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
-                        >
-                          View Full Results Report
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredStudents.length === 0 && (
-                    <tr>
-                      <td colSpan="4" className="px-4 py-8 text-center text-slate-400">
-                        No matching students.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {/* Header */}
+        <div className="border-b border-slate-100 px-6 py-5">
+          <h2 className="text-xl font-semibold text-black">
+            {routeClassId ? `${selectedClass?.name || 'Class'} Reports` : 'Reports by Class'}
+          </h2>
+          <p className="mt-1 text-sm text-black">
+            {routeClassId
+              ? `Every student in ${selectedClass?.name || 'this class'}, each with a link to their full results report.`
+              : 'Choose a class below to see all its students, each with a link to their full results report.'}
+          </p>
         </div>
-      )}
+
+        {loadingClasses && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading classes...</p>}
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
+
+        {/* Class picker */}
+        {!routeClassId && !loadingClasses && classes.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-b border-slate-100 px-6 py-5">
+            {classes.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => selectClass(c.id)}
+                className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+                  String(classId) === String(c.id)
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-slate-300 bg-white text-black hover:bg-slate-50'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!loadingClasses && classes.length === 0 && (
+          <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">No classes registered yet.</p>
+        )}
+
+        {classId && (
+          <>
+            {/* Toolbar: title, export/print, stream filter, search */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+              <h3 className="text-sm font-semibold text-black">
+                Students in {selectedClass?.name}
+                {streamId && streamsForSelectedClass.find((s) => String(s.id) === String(streamId))
+                  ? ` — Stream ${streamsForSelectedClass.find((s) => String(s.id) === String(streamId)).name}`
+                  : ''}
+              </h3>
+              <div className="no-print flex flex-wrap gap-3">
+                <button
+                  onClick={handleExportExcel}
+                  disabled={filteredStudents.length === 0}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-black transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Export to Excel
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  disabled={filteredStudents.length === 0}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-black transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Print / PDF
+                </button>
+                <select
+                  value={streamId}
+                  onChange={(e) => setStreamId(e.target.value)}
+                  disabled={streamsForSelectedClass.length === 0}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-black"
+                >
+                  <option value="">All Streams</option>
+                  {streamsForSelectedClass.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Search by name or admission number..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-56 rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {loadingStudents && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading students...</p>}
+
+            {/* Table */}
+            {!loadingStudents && (
+              <>
+                <div className="border-b border-slate-100 bg-slate-50 px-6 py-2 text-xs text-black">
+                  {filteredStudents.length} students
+                </div>
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
+                    <tr>
+                      <th className="px-6 py-3 font-medium">Admission Number</th>
+                      <th className="px-6 py-3 font-medium">Student</th>
+                      <th className="px-6 py-3 font-medium">Stream</th>
+                      <th className="px-6 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredStudents.map((s) => (
+                      <tr key={s.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-3 text-black">{s.admission_number}</td>
+                        <td className="px-6 py-3 font-medium text-black">{studentName(s)}</td>
+                        <td className="px-6 py-3 text-black">{studentStream(s)}</td>
+                        <td className="px-6 py-3">
+                          <Link
+                            to={`/dashboard/students/${s.id}/report-card`}
+                            state={{ from: `${location.pathname}${location.search}` }}
+                            className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
+                          >
+                            View Full Results Report
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredStudents.length === 0 && (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-10 text-center text-black">
+                          No matching students.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -14,6 +14,7 @@ const ClassSubject = require('./ClassSubject');
 const Exam = require('./Exam');
 const Result = require('./Result');
 const Attendance = require('./Attendance');
+const Announcement = require('./Announcement');
 
 // --- Associations ---
 
@@ -42,6 +43,10 @@ Enrollment.belongsTo(AcademicYear, { foreignKey: 'academic_year_id' });
 User.hasOne(Teacher, { foreignKey: 'user_id' });
 Teacher.belongsTo(User, { foreignKey: 'user_id' });
 
+//Announcement <-> User
+User.hasMany(Announcement, { foreignKey: 'posted_by' });
+Announcement.belongsTo(User, { foreignKey: 'posted_by' });
+
 // Student <-> User (optional login link, for the 'student' role)
 User.hasOne(Student, { foreignKey: 'user_id' });
 Student.belongsTo(User, { foreignKey: 'user_id' });
@@ -62,6 +67,7 @@ Subject.belongsToMany(Teacher, {
   otherKey: 'teacher_id',
   as: 'teachersWithExpertise',
 });
+
 
 // ClassSubject: SchoolClass <-> Subject <-> Teacher <-> AcademicYear <-> Stream
 SchoolClass.hasMany(ClassSubject, { foreignKey: 'school_class_id' });
@@ -113,4 +119,5 @@ module.exports = {
   Exam,
   Result,
   Attendance,
+  Announcement,
 };

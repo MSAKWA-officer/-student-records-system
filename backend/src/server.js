@@ -18,6 +18,7 @@ const resultRoutes = require('./routes/resultRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
 
 const app = express();
 
@@ -42,6 +43,8 @@ app.use('/api/results', resultRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/announcements', announcementRoutes);
+
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });

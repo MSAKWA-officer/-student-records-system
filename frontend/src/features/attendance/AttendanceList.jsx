@@ -13,10 +13,10 @@ const statusLabels = {
   excused: 'Excused',
 };
 const statusStyles = {
-  present: 'bg-emerald-100 text-emerald-700',
-  absent: 'bg-red-100 text-red-700',
-  late: 'bg-amber-100 text-amber-700',
-  excused: 'bg-slate-200 text-slate-700',
+  present: 'bg-emerald-100 text-black',
+  absent: 'bg-red-100 text-black',
+  late: 'bg-amber-100 text-black',
+  excused: 'bg-slate-200 text-black',
 };
 
 function todayIso() {
@@ -183,225 +183,225 @@ export default function AttendanceList() {
   }
 
   function studentStream(s) {
-    
     const enrollment = (s.Enrollments || []).find((e) => (streamId ? e.stream_id === Number(streamId) : true));
     return enrollment?.Stream?.name || (s.Enrollments || [])[0]?.Stream?.name || '—';
   }
-  
+
   function handleExportExcel() {
-  const data = students.map((s) => ({
-    'Admission No.': s.admission_number,
-    'Student': studentName(s),
-    'Stream': studentStream(s),
-    'Status': statusLabels[rows[s.id]?.status] || rows[s.id]?.status || '',
-    'Notes': rows[s.id]?.notes || '',
-  }));
-  const label = selectedClass?.name || 'Class';
-  exportToExcel(data, `${label}-Attendance-${date}`, 'Attendance');
-}
+    const data = students.map((s) => ({
+      'Admission No.': s.admission_number,
+      'Student': studentName(s),
+      'Stream': studentStream(s),
+      'Status': statusLabels[rows[s.id]?.status] || rows[s.id]?.status || '',
+      'Notes': rows[s.id]?.notes || '',
+    }));
+    const label = selectedClass?.name || 'Class';
+    exportToExcel(data, `${label}-Attendance-${date}`, 'Attendance');
+  }
 
   const recordedCount = Object.values(rows).filter((r) => r.recordId).length;
 
   return (
     <div className="p-4">
-      {routeClassId && (
-        <div className="mb-1 flex items-center gap-2 text-sm text-slate-500">
-          <Link to="/dashboard/attendance" className="hover:underline">Attendance</Link>
-          <span>/</span>
-          <span className="text-slate-700">{selectedClass?.name || '...'}</span>
-          
-        </div>
-      )}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">
-            {routeClassId ? `${selectedClass?.name || 'Class'} Attendance` : 'Attendance'}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {routeClassId
-              ? `Select a Stream and Date to record or view attendance for ${selectedClass?.name || 'this class'}.`
-              : 'Select a Class, Stream and Date to record or view attendance for all students in that class/stream.'}
-          </p>
-        </div>
-          {canEdit && readyToLoad && students.length > 0 && (
-    <button onClick={saveAll} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500">
-      Save All
-    </button>
-  )}
-{readyToLoad && students.length > 0 && (
-  <button
-    onClick={handleExportExcel}
-    className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-  >
-    Export to Excel
-  </button>
-)}
-{readyToLoad && students.length > 0 && (
-  <button
-    onClick={() => window.print()}
-    className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-  >
-    Print / PDF
-  </button>
-)}    
-
-
-        {canEdit && readyToLoad && students.length > 0 && (
-          <button
-            onClick={saveAll}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-          >
-            Save All
-          </button>
-        )}
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-3">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Class *</label>
-          <select
-            value={classId}
-            onChange={(e) => {
-              setClassId(e.target.value);
-              setStreamId('');
-            }}
-            disabled={loadingLookups || Boolean(routeClassId)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
-          >
-            <option value="">-- Select Class --</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Stream</label>
-          <select
-            value={streamId}
-            onChange={(e) => setStreamId(e.target.value)}
-            disabled={!classId}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
-          >
-            <option value="">All Streams</option>
-            {streamsForSelectedClass.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Date *</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-
-      {!readyToLoad && !error && (
-        <p className="mt-6 text-sm text-slate-500">
-          Select a Class and a Date above to see the student list and record their attendance.
-        </p>
-      )}
-
-      {readyToLoad && loadingGrid && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
-
-      {readyToLoad && !loadingGrid && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">
-            <span>
-              {students.length} students · {recordedCount} attendance record(s) for {date}
-            </span>
+      {/* Everything for this page — breadcrumb, header, filters, and the
+          attendance table — lives inside one card instead of separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Breadcrumb (only when reached via a class-specific link) */}
+        {routeClassId && (
+          <div className="flex items-center gap-2 border-b border-slate-100 px-6 pt-4 text-sm text-black">
+            <Link to="/dashboard/attendance" className="hover:underline">Attendance</Link>
+            <span>/</span>
+            <span className="pb-4 text-black">{selectedClass?.name || '...'}</span>
           </div>
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Admission No.</th>
-                <th className="px-4 py-3 font-medium">Student</th>
-                <th className="px-4 py-3 font-medium">Stream</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Notes</th>
-                <th className="px-4 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {students.map((s) => {
-                const row = rows[s.id] || {};
-                return (
-                  <tr key={s.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-600">{s.admission_number}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{studentName(s)}</td>
-                    <td className="px-4 py-3 text-slate-600">{studentStream(s)}</td>
-                    <td className="px-4 py-3">
-                      {canEdit ? (
-                        <select
-                          value={row.status}
-                          onChange={(e) => updateRow(s.id, 'status', e.target.value)}
-                          className={`rounded-full px-2 py-1 text-xs font-medium outline-none ${statusStyles[row.status] || 'bg-slate-100 text-slate-700'}`}
-                        >
-                          {Object.entries(statusLabels).map(([value, label]) => (
-                            <option key={value} value={value}>{label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${statusStyles[row.status] || 'bg-slate-100 text-slate-700'}`}>
-                          {statusLabels[row.status] || row.status}
-                        </span>
-                      )}
-                      {row.error && <p className="mt-1 text-xs text-red-600">{row.error}</p>}
-                    </td>
-                    <td className="px-4 py-3">
-                      {canEdit ? (
-                        <input
-                          value={row.notes}
-                          onChange={(e) => updateRow(s.id, 'notes', e.target.value)}
-                          placeholder="e.g. Was sick"
-                          className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                        />
-                      ) : (
-                        <span className="text-slate-600">{row.notes || '—'}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {canEdit ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => saveRow(s.id)}
-                            disabled={row.saving}
-                            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+        )}
+
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">
+              {routeClassId ? `${selectedClass?.name || 'Class'} Attendance` : 'Attendance'}
+            </h2>
+            <p className="mt-1 text-sm text-black">
+              {routeClassId
+                ? `Select a Stream and Date to record or view attendance for ${selectedClass?.name || 'this class'}.`
+                : 'Select a Class, Stream and Date to record or view attendance for all students in that class/stream.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {readyToLoad && students.length > 0 && (
+              <button
+                onClick={handleExportExcel}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-black transition hover:bg-slate-50"
+              >
+                Export to Excel
+              </button>
+            )}
+            {readyToLoad && students.length > 0 && (
+              <button
+                onClick={() => window.print()}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-black transition hover:bg-slate-50"
+              >
+                Print / PDF
+              </button>
+            )}
+            {canEdit && readyToLoad && students.length > 0 && (
+              <button
+                onClick={saveAll}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+              >
+                Save All
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="grid grid-cols-1 gap-4 border-b border-slate-100 px-6 py-5 sm:grid-cols-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-black">Class *</label>
+            <select
+              value={classId}
+              onChange={(e) => {
+                setClassId(e.target.value);
+                setStreamId('');
+              }}
+              disabled={loadingLookups || Boolean(routeClassId)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-black"
+            >
+              <option value="">-- Select Class --</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-black">Stream</label>
+            <select
+              value={streamId}
+              onChange={(e) => setStreamId(e.target.value)}
+              disabled={!classId}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-black"
+            >
+              <option value="">All Streams</option>
+              {streamsForSelectedClass.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-black">Date *</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
+
+        {!readyToLoad && !error && (
+          <p className="px-6 py-6 text-sm text-black">
+            Select a Class and a Date above to see the student list and record their attendance.
+          </p>
+        )}
+
+        {readyToLoad && loadingGrid && <p className="px-6 py-6 text-sm text-black">Loading...</p>}
+
+        {/* Attendance table */}
+        {readyToLoad && !loadingGrid && (
+          <>
+            <div className="border-b border-slate-100 bg-slate-50 px-6 py-2 text-xs text-black">
+              {students.length} students · {recordedCount} attendance record(s) for {date}
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Admission No.</th>
+                  <th className="px-6 py-3 font-medium">Student</th>
+                  <th className="px-6 py-3 font-medium">Stream</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Notes</th>
+                  <th className="px-6 py-3 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {students.map((s) => {
+                  const row = rows[s.id] || {};
+                  return (
+                    <tr key={s.id} className="hover:bg-slate-50">
+                      <td className="px-6 py-3 text-black">{s.admission_number}</td>
+                      <td className="px-6 py-3 font-medium text-black">{studentName(s)}</td>
+                      <td className="px-6 py-3 text-black">{studentStream(s)}</td>
+                      <td className="px-6 py-3">
+                        {canEdit ? (
+                          <select
+                            value={row.status}
+                            onChange={(e) => updateRow(s.id, 'status', e.target.value)}
+                            className={`rounded-full px-2 py-1 text-xs font-medium outline-none ${statusStyles[row.status] || 'bg-slate-100 text-black'}`}
                           >
-                            {row.saving ? 'Saving...' : 'Save'}
-                          </button>
-                          {row.recordId && (
+                            {Object.entries(statusLabels).map(([value, label]) => (
+                              <option key={value} value={value}>{label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className={`rounded-full px-2 py-1 text-xs font-medium ${statusStyles[row.status] || 'bg-slate-100 text-black'}`}>
+                            {statusLabels[row.status] || row.status}
+                          </span>
+                        )}
+                        {row.error && <p className="mt-1 text-xs text-black">{row.error}</p>}
+                      </td>
+                      <td className="px-6 py-3">
+                        {canEdit ? (
+                          <input
+                            value={row.notes}
+                            onChange={(e) => updateRow(s.id, 'notes', e.target.value)}
+                            placeholder="e.g. Was sick"
+                            className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          />
+                        ) : (
+                          <span className="text-black">{row.notes || '—'}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3">
+                        {canEdit ? (
+                          <div className="flex flex-wrap items-center gap-2">
                             <button
-                              onClick={() => deleteRow(s.id, studentName(s))}
-                              className="text-xs text-red-600 hover:underline"
+                              onClick={() => saveRow(s.id)}
+                              disabled={row.saving}
+                              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                             >
-                              Delete
+                              {row.saving ? 'Saving...' : 'Save'}
                             </button>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">View only</span>
-                      )}
+                            {row.recordId && (
+                              <button
+                                onClick={() => deleteRow(s.id, studentName(s))}
+                                className="text-xs text-red-600 hover:underline"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-black">View only</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {students.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-10 text-center text-black">
+                      No students in this class/stream.
                     </td>
                   </tr>
-                );
-              })}
-              {students.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-slate-400">
-                    No students in this class/stream.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                )}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
     </div>
   );
 }

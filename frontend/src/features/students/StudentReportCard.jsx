@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { studentsApi } from './studentsApi';
 import { academicYearsApi } from '../academicYears/academicYearsApi';
 import { termsApi } from '../terms/termsApi';
 
-const SCHOOL_NAME = 'Student Records System School';
+const SCHOOL_NAME = 'KATORO SECONDARY SCHOOL';
 const GRADE_POINTS = { A: 1, B: 2, C: 3, D: 4, F: 5 };
 const GRADE_REMARKS = { A: 'Excellent', B: 'Very Good', C: 'Good', D: 'Satisfactory', F: 'Fail' };
 
@@ -29,10 +29,20 @@ function computeDivision(totalPoints, count) {
 export default function StudentReportCard() {
   const { id } = useParams();
   const location = useLocation();
-  // If we arrived here from a class listing (e.g. Reports > Form 1), go
-  // back there instead of always landing on the student's profile page.
-  const backTo = location.state?.from || `/dashboard/students/${id}`;
-  const backLabel = location.state?.from ? '← Back' : '← Back to Student';
+  const navigate = useNavigate();
+  // Only ever go back to wherever the user actually came from (e.g. a
+  // specific student's page, or a class's Reports listing). If there is no
+  // recorded origin, fall back to normal browser history instead of
+  // hard-coding a route — this page should never force the user into the
+  // main Students list.
+  const cameFrom = location.state?.from;
+  function goBack() {
+    if (cameFrom) {
+      navigate(cameFrom);
+    } else {
+      navigate(-1);
+    }
+  }
   const [years, setYears] = useState([]);
   const [terms, setTerms] = useState([]);
   const [academicYearId, setAcademicYearId] = useState('');
@@ -73,32 +83,53 @@ export default function StudentReportCard() {
       .finally(() => setLoading(false));
   }, [id, academicYearId, termId]);
 
-  // Each subject's average -> Grade + Remarks + Points, in one summary
-  const gradedSubjects = useMemo(() => {
+  // Every subject registered for this class, whether or not marks were
+  // recorded — subjects with no marks are flagged so they can be shown as
+  // "Incomplete" instead of silently disappearing from the report.
+  const allSubjectRows = useMemo(() => {
     if (!report) return [];
-    return report.subjects
-      .filter((s) => s.average != null)
-      .map((s) => {
-        const grade = computeGrade(s.average);
-        return {
-          subject_id: s.subject_id,
-          subject_name: s.subject_name,
-          average: s.average,
-          grade,
-          points: grade ? GRADE_POINTS[grade] : null,
-        };
-      });
+    return report.subjects.map((s) => {
+      const complete = s.average != null;
+      const grade = complete ? computeGrade(s.average) : null;
+      return {
+        subject_id: s.subject_id,
+        subject_name: s.subject_name,
+        average: complete ? s.average : null,
+        grade,
+        points: grade ? GRADE_POINTS[grade] : null,
+        complete,
+      };
+    });
   }, [report]);
 
-  const totalPoints = gradedSubjects.reduce((sum, s) => sum + (s.points || 0), 0);
-  const division = computeDivision(totalPoints, gradedSubjects.length);
+  // Only fully-marked subjects count toward Subjects Sat / Total Points / Division.
+  const completedSubjects = useMemo(
+    () => allSubjectRows.filter((s) => s.complete),
+    [allSubjectRows]
+  );
+
+  // Division points come from only the best 7 subjects (lowest points =
+  // strongest grades) among those actually sat — not every subject the
+  // student took. If fewer than 7 were sat, all of them count.
+  const bestSubjectsForDivision = useMemo(
+    () => [...completedSubjects].sort((a, b) => a.points - b.points).slice(0, 7),
+    [completedSubjects]
+  );
+
+  const totalPoints = bestSubjectsForDivision.reduce((sum, s) => sum + (s.points || 0), 0);
+  // While any subject is still missing marks, the division isn't final —
+  // show "Incomplete" rather than a number that could change once the
+  // remaining marks are entered.
+  const hasIncompleteSubject = allSubjectRows.some((s) => !s.complete);
+  const divisionRaw = computeDivision(totalPoints, bestSubjectsForDivision.length);
+  const division = hasIncompleteSubject ? null : divisionRaw;
 
   return (
-    <div className="p-4">
+    <div className="p-4 print:p-0">
       <div className="print:hidden">
-        <Link to={backTo} className="text-sm text-blue-600 hover:underline">
-          {backLabel}
-        </Link>
+        <button onClick={goBack} className="text-sm text-blue-600 hover:underline">
+          ← Back
+        </button>
 
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <h2 className="text-xl font-semibold text-slate-900">Results Report</h2>
@@ -145,10 +176,112 @@ export default function StudentReportCard() {
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
       {!loading && !error && report && (
-        <div className="result-slip mt-6">
+        <div className="result-slip report-print-compact mt-6 print:mt-0">
+          {/* Scoped print overrides — shrink spacing/fonts so the whole
+              report (letterhead, table, summary, comment, signatures)
+              always fits on a single sheet of paper, no matter how many
+              subjects are listed. */}
+          <style>{`
+            @media print {
+              @page { size: A4; margin: 8mm; }
+              .report-print-compact .result-slip-sheet {
+                border: none !important;
+                max-width: 100% !important;
+              }
+              .report-print-compact .result-slip-letterhead {
+                padding: 8px 14px !important;
+                gap: 10px !important;
+              }
+              .report-print-compact .result-slip-crest {
+                width: 40px !important;
+                height: 40px !important;
+              }
+              .report-print-compact .result-slip-crest svg {
+                width: 20px !important;
+                height: 20px !important;
+              }
+              .report-print-compact .result-slip-school-name {
+                font-size: 12px !important;
+                line-height: 1.1 !important;
+              }
+              .report-print-compact .result-slip-school-meta {
+                font-size: 9.5px !important;
+                line-height: 1.2 !important;
+              }
+              .report-print-compact .result-slip-doc-title {
+                padding: 4px 14px !important;
+              }
+              .report-print-compact .result-slip-doc-title h3 {
+                font-size: 12px !important;
+                margin: 0 !important;
+              }
+              .report-print-compact .result-slip-doc-title p {
+                font-size: 9.5px !important;
+                margin-top: 1px !important;
+              }
+              .report-print-compact .result-slip-body {
+                padding: 8px 16px 10px !important;
+              }
+              .report-print-compact .result-slip-info-grid {
+                padding: 6px 12px !important;
+                font-size: 10.5px !important;
+                gap: 0 !important;
+              }
+              .report-print-compact .result-slip-info-row {
+                padding: 2px 0 !important;
+              }
+              .report-print-compact .result-slip-table {
+                margin-top: 8px !important;
+                font-size: 10px !important;
+              }
+              .report-print-compact .result-slip-table caption {
+                font-size: 10px !important;
+                margin-bottom: 3px !important;
+              }
+              .report-print-compact .result-slip-table th,
+              .report-print-compact .result-slip-table td {
+                padding: 3px 6px !important;
+              }
+              .report-print-compact .result-slip-summary {
+                margin-top: 8px !important;
+                gap: 6px !important;
+              }
+              .report-print-compact .result-slip-summary-box {
+                padding: 4px 6px !important;
+              }
+              .report-print-compact .result-slip-summary-label {
+                font-size: 9px !important;
+              }
+              .report-print-compact .result-slip-summary-value {
+                font-size: 13px !important;
+                margin-top: 0 !important;
+              }
+              .report-print-compact .result-slip-remarks {
+                margin-top: 8px !important;
+                padding: 6px 10px !important;
+                font-size: 10px !important;
+                min-height: 26px !important;
+              }
+              .report-print-compact .result-slip-signatures {
+                margin-top: 16px !important;
+                gap: 24px !important;
+                font-size: 10px !important;
+              }
+              .report-print-compact .result-slip-signature-line {
+                margin-top: 16px !important;
+                padding-top: 3px !important;
+              }
+              .report-print-compact .result-slip-footer {
+                margin-top: 10px !important;
+                padding-top: 6px !important;
+                font-size: 8.5px !important;
+              }
+            }
+          `}</style>
           <div className="result-slip-sheet">
-            {/* Letterhead */}
-            <div className="result-slip-letterhead">
+            {/* Letterhead — background forced to match the rest of the sheet
+                so the whole report reads as one continuous card. */}
+            <div className="result-slip-letterhead" style={{ background: '#ffffff' }}>
               <div className="result-slip-crest">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
@@ -161,16 +294,18 @@ export default function StudentReportCard() {
                 </svg>
               </div>
               <div>
-                <p className="result-slip-school-name">{SCHOOL_NAME}</p>
+                <p className="result-slip-school-name" style={{ fontSize: '14px' }}>{SCHOOL_NAME}</p>
                 <p className="result-slip-school-meta">
                   P.O. Box 000, Mbeya, Tanzania · Tel: +255 000 000 000 · info@school.example
                 </p>
               </div>
             </div>
 
-            {/* Document title */}
-            <div className="result-slip-doc-title">
-              <h3>Student Results Report</h3>
+            {/* Document title — same background as the rest of the sheet.
+                Both this heading and the school name above are set to the
+                same, smaller font size. */}
+            <div className="result-slip-doc-title" style={{ background: '#ffffff' }}>
+              <h3 style={{ fontSize: '14px' }}>Student Results Report</h3>
               <p>
                 {report.school_class}{report.stream ? ` - ${report.stream}` : ''} · {report.academic_year} · {report.term}
               </p>
@@ -201,8 +336,9 @@ export default function StudentReportCard() {
                 </div>
               </div>
 
-              {/* Single summary table: each subject's average */}
-              {gradedSubjects.length === 0 ? (
+              {/* Single summary table: every subject registered for this class,
+                  including any still missing marks (shown as Incomplete) */}
+              {allSubjectRows.length === 0 ? (
                 <p className="mt-8 text-center text-sm text-slate-400">
                   No results recorded for this student in the selected period.
                 </p>
@@ -221,13 +357,13 @@ export default function StudentReportCard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {gradedSubjects.map((s, idx) => (
+                    {allSubjectRows.map((s, idx) => (
                       <tr key={s.subject_id}>
                         <td>{idx + 1}</td>
                         <td style={{ fontWeight: 600 }}>{s.subject_name}</td>
-                        <td className="text-right">{Math.round(s.average)}/100</td>
-                        <td>{s.grade || '—'}</td>
-                        <td>{s.grade ? GRADE_REMARKS[s.grade] : '—'}</td>
+                        <td className="text-right">{s.complete ? Math.round(s.average) : 'Incomplete'}</td>
+                        <td>{s.complete ? s.grade || 'Incomplete' : 'Incomplete'}</td>
+                        <td>{s.complete ? GRADE_REMARKS[s.grade] : 'Incomplete'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,20 +371,20 @@ export default function StudentReportCard() {
               )}
 
               {/* Summary: Subjects Sat / Total Points / Division */}
-              {gradedSubjects.length > 0 && (
+              {allSubjectRows.length > 0 && (
                 <div className="result-slip-summary">
                   <div className="result-slip-summary-box">
                     <p className="result-slip-summary-label">Subjects Sat</p>
-                    <p className="result-slip-summary-value">{gradedSubjects.length}</p>
+                    <p className="result-slip-summary-value">{completedSubjects.length}</p>
                   </div>
                   <div className="result-slip-summary-box">
-                    <p className="result-slip-summary-label">Total Points</p>
+                    <p className="result-slip-summary-label">Total Points (Best 7)</p>
                     <p className="result-slip-summary-value">{totalPoints}</p>
                   </div>
                   <div className="result-slip-summary-box">
                     <p className="result-slip-summary-label">Division</p>
                     <p className="result-slip-summary-value">
-                      {division != null ? `Division ${division}` : '—'}
+                      {division != null ? `Division ${division}` : 'Division Incomplete'}
                     </p>
                   </div>
                 </div>
@@ -265,11 +401,6 @@ export default function StudentReportCard() {
                 <div className="result-slip-signature-line">Class Teacher&apos;s Signature</div>
                 <div className="result-slip-signature-line">Head Teacher&apos;s Signature</div>
               </div>
-
-              <p className="result-slip-footer">
-                This is an official computer-generated results report issued by {SCHOOL_NAME}. Any alteration
-                renders it invalid.
-              </p>
             </div>
           </div>
         </div>

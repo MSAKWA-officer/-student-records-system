@@ -118,161 +118,160 @@ export default function ExamList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Exams</h2>
-          <p className="mt-1 text-sm text-slate-500">{exams.length} registered</p>
-        </div>
-        {canEdit && (
-          <button
-            onClick={showForm ? closeForm : openAddForm}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-          >
-            {showForm ? 'Close' : '+ Add Exam'}
-          </button>
-        )}
-      </div>
-
-      <div className="mt-4 flex items-center gap-2">
-        <label className="text-sm font-medium text-slate-700">Filter by Term:</label>
-        <select
-          value={filterTerm}
-          onChange={(e) => setFilterTerm(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        >
-          <option value="">All Terms</option>
-          {terms.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name} {t.AcademicYear ? `(${t.AcademicYear.year_name})` : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {canEdit && showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mt-5 max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-        >
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">
-            {editingId ? 'Edit Exam' : 'Add Exam'}
-          </h3>
-          {formError && (
-            <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
-          )}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Exam Name *</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleFormChange}
-                placeholder="e.g. Mid-Term Exam"
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Term *</label>
-              <select
-                name="term_id"
-                value={form.term_id}
-                onChange={handleFormChange}
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">-- Select Term --</option>
-                {terms.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name} {t.AcademicYear ? `(${t.AcademicYear.year_name})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Exam Date</label>
-              <input
-                type="date"
-                name="exam_date"
-                value={form.exam_date}
-                onChange={handleFormChange}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Max Marks</label>
-              <input
-                type="number"
-                name="max_marks"
-                value={form.max_marks}
-                onChange={handleFormChange}
-                min="1"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Weight (%)</label>
-              <input
-                type="number"
-                name="weight_percent"
-                value={form.weight_percent}
-                onChange={handleFormChange}
-                min="0"
-                max="100"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+      {/* Everything for this page — header, term filter, add/edit-exam form,
+          and the table — lives inside one card instead of separate boxes. */}
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">Exams</h2>
+            <p className="mt-1 text-sm text-black">{exams.length} registered</p>
           </div>
-          <div className="mt-5 flex items-center gap-3">
+          {canEdit && (
             <button
-              type="submit"
-              disabled={saving}
-              className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+              onClick={showForm ? closeForm : openAddForm}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
-              {saving ? 'Saving...' : editingId ? 'Update Exam' : 'Save Exam'}
+              {showForm ? 'Close' : '+ Add Exam'}
             </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={closeForm}
-                className="text-sm font-medium text-slate-500 hover:underline"
-              >
-                Cancel
-              </button>
+          )}
+        </div>
+
+        {/* Term filter */}
+        <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4">
+          <label className="text-sm font-medium text-black">Filter by Term:</label>
+          <select
+            value={filterTerm}
+            onChange={(e) => setFilterTerm(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">All Terms</option>
+            {terms.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} {t.AcademicYear ? `(${t.AcademicYear.year_name})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Add / edit exam form */}
+        {canEdit && showForm && (
+          <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
+            <h3 className="mb-4 text-sm font-semibold text-black">
+              {editingId ? 'Edit Exam' : 'Add Exam'}
+            </h3>
+            {formError && (
+              <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
             )}
-          </div>
-        </form>
-      )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Exam Name *</label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={handleFormChange}
+                  placeholder="e.g. Mid-Term Exam"
+                  required
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Term *</label>
+                <select
+                  name="term_id"
+                  value={form.term_id}
+                  onChange={handleFormChange}
+                  required
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">-- Select Term --</option>
+                  {terms.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} {t.AcademicYear ? `(${t.AcademicYear.year_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Exam Date</label>
+                <input
+                  type="date"
+                  name="exam_date"
+                  value={form.exam_date}
+                  onChange={handleFormChange}
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Max Marks</label>
+                <input
+                  type="number"
+                  name="max_marks"
+                  value={form.max_marks}
+                  onChange={handleFormChange}
+                  min="1"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-black">Weight (%)</label>
+                <input
+                  type="number"
+                  name="weight_percent"
+                  value={form.weight_percent}
+                  onChange={handleFormChange}
+                  min="0"
+                  max="100"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : editingId ? 'Update Exam' : 'Save Exam'}
+              </button>
+              {editingId && (
+                <button type="button" onClick={closeForm} className="text-sm font-medium text-black hover:underline">
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        )}
 
-      {loading && <p className="mt-6 text-sm text-slate-500">Loading...</p>}
-      {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
+        {loading && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading...</p>}
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
 
-      {!loading && !error && (
-        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        {/* Table */}
+        {!loading && !error && (
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
               <tr>
-                <th className="px-4 py-3 font-medium">Exam</th>
-                <th className="px-4 py-3 font-medium">Term</th>
-                <th className="px-4 py-3 font-medium">Date</th>
-                <th className="px-4 py-3 font-medium">Max Marks</th>
-                <th className="px-4 py-3 font-medium">Weight (%)</th>
-                {canEdit && <th className="px-4 py-3 font-medium">Actions</th>}
+                <th className="px-6 py-3 font-medium">Exam</th>
+                <th className="px-6 py-3 font-medium">Term</th>
+                <th className="px-6 py-3 font-medium">Date</th>
+                <th className="px-6 py-3 font-medium">Max Marks</th>
+                <th className="px-6 py-3 font-medium">Weight (%)</th>
+                {canEdit && <th className="px-6 py-3 font-medium">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {exams.map((ex) => (
                 <tr key={ex.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{ex.name}</td>
-                  <td className="px-4 py-3 text-slate-600">
+                  <td className="px-6 py-3 font-medium text-black">{ex.name}</td>
+                  <td className="px-6 py-3 text-black">
                     {ex.Term?.name || '—'}
                     {ex.Term?.AcademicYear ? ` (${ex.Term.AcademicYear.year_name})` : ''}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{ex.exam_date || '—'}</td>
-                  <td className="px-4 py-3 text-slate-600">{ex.max_marks}</td>
-                  <td className="px-4 py-3 text-slate-600">{ex.weight_percent}%</td>
+                  <td className="px-6 py-3 text-black">{ex.exam_date || '—'}</td>
+                  <td className="px-6 py-3 text-black">{ex.max_marks}</td>
+                  <td className="px-6 py-3 text-black">{ex.weight_percent}%</td>
                   {canEdit && (
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-3">
                       <button onClick={() => openEditForm(ex)} className="text-blue-600 hover:underline">
                         Edit
                       </button>
@@ -290,15 +289,15 @@ export default function ExamList() {
               ))}
               {exams.length === 0 && (
                 <tr>
-                  <td colSpan={canEdit ? 6 : 5} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={canEdit ? 6 : 5} className="px-6 py-10 text-center text-black">
                     No exams yet.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
