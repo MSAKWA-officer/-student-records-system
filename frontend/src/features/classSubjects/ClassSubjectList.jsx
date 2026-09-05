@@ -1,17 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { classSubjectsApi } from './classSubjectsApi';
 import { classesApi } from '../classes/classesApi';
-import { subjectsApi } from '../subjects/Subjectsapi';
-import { teachersApi } from '../teachers/teachersApi';
 import { academicYearsApi } from '../academicYears/academicYearsApi';
-
-const emptyForm = { school_class_id: '', subject_id: '', teacher_id: '', academic_year_id: '', stream_ids: [] };
 
 export default function ClassSubjectList() {
   const [assignments, setAssignments] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [teachers, setTeachers] = useState([]);
   const [years, setYears] = useState([]);
 
   const [filterClassId, setFilterClassId] = useState('');
@@ -21,37 +16,21 @@ export default function ClassSubjectList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [formError, setFormError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const [editingTeacherId, setEditingTeacherId] = useState(null);
-  const [teacherDraft, setTeacherDraft] = useState('');
-
   // Load dropdown data once
   useEffect(() => {
     (async () => {
       try {
-        const [classesRes, subjectsRes, teachersRes, yearsRes] = await Promise.all([
+        const [classesRes, yearsRes] = await Promise.all([
           classesApi.getAll(),
-          subjectsApi.getAll(),
-          teachersApi.getAll(),
           academicYearsApi.getAll(),
         ]);
         setClasses(classesRes.data);
-        setSubjects(subjectsRes.data);
-        setTeachers(teachersRes.data);
         setYears(yearsRes.data);
 
-        // Default filter/form to current academic year, if any
         const current = yearsRes.data.find((y) => y.is_current);
-        if (current) {
-          setFilterYearId(String(current.id));
-          setForm((f) => ({ ...f, academic_year_id: String(current.id) }));
-        }
+        if (current) setFilterYearId(String(current.id));
       } catch (err) {
-        setError('Failed to load base data (classes/subjects/teachers/years).');
+        setError('Failed to load base data (classes/years).');
       }
     })();
   }, []);
@@ -83,111 +62,57 @@ export default function ClassSubjectList() {
     return cls?.Streams || [];
   }
 
-  function handleFormChange(e) {
-    const { name, value } = e.target;
-    if (name === 'school_class_id') {
-      // when the class changes, previously selected streams no longer apply
-      setForm((f) => ({ ...f, school_class_id: value, stream_ids: [] }));
-      return;
-    }
-    setForm((f) => ({ ...f, [name]: value }));
-  }
-
-  function toggleFormStream(streamId) {
-    setForm((f) => {
-      const idStr = String(streamId);
-      const already = f.stream_ids.map(String).includes(idStr);
-      return {
-        ...f,
-        stream_ids: already
-          ? f.stream_ids.filter((id) => String(id) !== idStr)
-          : [...f.stream_ids, streamId],
-      };
-    });
-  }
-
-  function openAddForm() {
-    setForm({ ...emptyForm, academic_year_id: filterYearId || '', school_class_id: filterClassId || '' });
-    setFormError('');
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setFormError('');
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-    setSaving(true);
-    try {
-      await classSubjectsApi.create({
-        ...form,
-        teacher_id: form.teacher_id || null,
-      });
-      closeForm();
-      fetchAssignments();
-    } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to save the subject allocation.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('Are you sure you want to remove this subject allocation?')) return;
-    try {
-      await classSubjectsApi.remove(id);
-      setAssignments((prev) => prev.filter((a) => a.id !== id));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to remove the subject allocation.');
-    }
-  }
-
-  function startEditTeacher(assignment) {
-    setEditingTeacherId(assignment.id);
-    setTeacherDraft(assignment.teacher_id ? String(assignment.teacher_id) : '');
-  }
-
-  function cancelEditTeacher() {
-    setEditingTeacherId(null);
-    setTeacherDraft('');
-  }
-
-  async function saveTeacher(id) {
-    try {
-      const res = await classSubjectsApi.update(id, { teacher_id: teacherDraft || null });
-      setAssignments((prev) => prev.map((a) => (a.id === id ? res.data : a)));
-      cancelEditTeacher();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to change the teacher.');
-    }
-  }
-
-  // Group assignments by class so each class shows its own list of
-  // teacher + subject rows (a teacher can legitimately repeat across
-  // several subjects/streams within the same class).
-  function groupByClass(list) {
-    const groups = new Map();
+  // Group assignments by class, then by teacher within that class, so each
+  // teacher's name appears only once per class — with every subject they've
+  // been allocated in that class listed together in the Subject column.
+  function groupByClassThenTeacher(list) {
+    const classGroups = new Map();
     for (const a of list) {
       const classId = a.SchoolClass?.id ?? a.school_class_id ?? 'unknown';
       const className = a.SchoolClass?.name || 'Unassigned class';
-      if (!groups.has(classId)) {
-        groups.set(classId, { className, items: [] });
+      if (!classGroups.has(classId)) {
+        classGroups.set(classId, { className, teacherGroups: new Map() });
       }
-      groups.get(classId).items.push(a);
+      const classGroup = classGroups.get(classId);
+
+      const teacherKey = a.Teacher?.id ?? 'unassigned';
+      const teacherName = a.Teacher?.full_name || 'Not assigned yet';
+      const yearKey = a.AcademicYear?.id ?? a.academic_year_id ?? 'unknown';
+      // Same teacher can appear again in a different academic year — keep
+      // those as separate rows so the Year column stays meaningful.
+      const rowKey = `${teacherKey}-${yearKey}`;
+
+      if (!classGroup.teacherGroups.has(rowKey)) {
+        classGroup.teacherGroups.set(rowKey, {
+          teacherId: a.Teacher?.id ?? '',
+          teacherName,
+          yearId: a.AcademicYear?.id ?? a.academic_year_id ?? '',
+          yearName: a.AcademicYear?.year_name || '—',
+          subjects: [],
+        });
+      }
+      classGroup.teacherGroups.get(rowKey).subjects.push({
+        id: a.id,
+        name: a.Subject?.name || '—',
+        streamName: a.Stream?.name || 'All Streams',
+      });
     }
-    // Sort classes by name for a stable, predictable order
-    return Array.from(groups.values()).sort((a, b) => a.className.localeCompare(b.className));
+
+    return Array.from(classGroups.entries())
+      .map(([classId, group]) => ({
+        classId,
+        className: group.className,
+        rows: Array.from(group.teacherGroups.values()).sort((a, b) =>
+          a.teacherName.localeCompare(b.teacherName)
+        ),
+      }))
+      .sort((a, b) => a.className.localeCompare(b.className));
   }
 
-  const groupedAssignments = groupByClass(assignments);
+  const grouped = groupByClassThenTeacher(assignments);
 
   return (
     <div className="p-4">
-      {/* Everything for this page — header, filters, add-allocation form,
-          and the grouped tables — lives inside one card instead of separate boxes. */}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
@@ -197,120 +122,13 @@ export default function ClassSubjectList() {
               Link a Teacher, Subject, Class and Stream for an academic year · {assignments.length} found
             </p>
           </div>
-          <button
-            onClick={showForm ? closeForm : openAddForm}
+          <Link
+            to="/dashboard/class-subjects/add"
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
           >
-            {showForm ? 'Close' : '+ Add Allocation'}
-          </button>
+            + Add Allocation
+          </Link>
         </div>
-
-        {/* Add allocation form */}
-        {showForm && (
-          <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
-            <h3 className="mb-4 text-sm font-semibold text-black">New Subject Allocation</h3>
-            {formError && (
-              <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
-            )}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-black">Teacher</label>
-                <select
-                  name="teacher_id"
-                  value={form.teacher_id}
-                  onChange={handleFormChange}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">-- Not assigned yet --</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.full_name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-black">Subject *</label>
-                <select
-                  name="subject_id"
-                  value={form.subject_id}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">-- Select Subject --</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-black">Class *</label>
-                <select
-                  name="school_class_id"
-                  value={form.school_class_id}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">-- Select Class --</option>
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-black">Academic Year *</label>
-                <select
-                  name="academic_year_id"
-                  value={form.academic_year_id}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">-- Select Year --</option>
-                  {years.map((y) => (
-                    <option key={y.id} value={y.id}>{y.year_name}{y.is_current ? ' (Current)' : ''}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-4">
-                <label className="mb-1 block text-sm font-medium text-black">Stream</label>
-                {!form.school_class_id && (
-                  <p className="text-xs text-black">Select a class first to see its streams.</p>
-                )}
-                {form.school_class_id && (
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-md border border-slate-300 px-3 py-2">
-                    {streamsForClass(form.school_class_id).length === 0 && (
-                      <span className="text-sm text-black">
-                        This class has no streams — the allocation will apply to the whole class.
-                      </span>
-                    )}
-                    {streamsForClass(form.school_class_id).map((s) => (
-                      <label key={s.id} className="flex items-center gap-1.5 text-sm text-black">
-                        <input
-                          type="checkbox"
-                          checked={form.stream_ids.map(String).includes(String(s.id))}
-                          onChange={() => toggleFormStream(s.id)}
-                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        {s.name}
-                      </label>
-                    ))}
-                  </div>
-                )}
-                <p className="mt-1 text-xs text-black">
-                  Select one or more streams. If you select none, the allocation will apply to ALL streams of this class.
-                </p>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={saving}
-              className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
-            >
-              {saving ? 'Saving...' : 'Save Allocation'}
-            </button>
-          </form>
-        )}
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 border-b border-slate-100 px-6 py-4">
@@ -356,73 +174,68 @@ export default function ClassSubjectList() {
         {/* Grouped tables, one per class, all within the same outer card */}
         {!loading && !error && (
           <div className="divide-y divide-slate-100">
-            {groupedAssignments.length === 0 && (
+            {grouped.length === 0 && (
               <div className="px-6 py-10 text-center text-sm text-black">No subject allocations yet.</div>
             )}
 
-            {groupedAssignments.map((group) => (
-              <div key={group.className}>
+            {grouped.map((group) => (
+              <div key={group.classId}>
                 <div className="flex items-center justify-between bg-slate-50 px-6 py-3">
                   <h3 className="text-sm font-semibold text-black">{group.className}</h3>
                   <span className="text-xs font-medium text-black">
-                    {group.items.length} {group.items.length === 1 ? 'allocation' : 'allocations'}
+                    {group.rows.length} {group.rows.length === 1 ? 'teacher' : 'teachers'}
                   </span>
                 </div>
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-black">
                     <tr>
                       <th className="px-6 py-2 font-medium">Teacher</th>
-                      <th className="px-6 py-2 font-medium">Subject</th>
-                      <th className="px-6 py-2 font-medium">Stream</th>
+                      <th className="px-6 py-2 font-medium">Subject(s)</th>
                       <th className="px-6 py-2 font-medium">Year</th>
                       <th className="px-6 py-2 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {group.items.map((a) => (
-                      <tr key={a.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-3 text-black">
-                          {editingTeacherId === a.id ? (
-                            <div className="flex items-center gap-2">
-                              <select
-                                value={teacherDraft}
-                                onChange={(e) => setTeacherDraft(e.target.value)}
-                                className="rounded-md border border-slate-300 px-2 py-1 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                              >
-                                <option value="">-- Not assigned yet --</option>
-                                {teachers.map((t) => (
-                                  <option key={t.id} value={t.id}>{t.full_name}</option>
-                                ))}
-                              </select>
-                              <button onClick={() => saveTeacher(a.id)} className="text-blue-600 hover:underline">
-                                Save
-                              </button>
-                              <button onClick={cancelEditTeacher} className="text-black hover:underline">
-                                Cancel
-                              </button>
+                    {group.rows.map((row) => {
+                      const params = new URLSearchParams({
+                        class_id: group.classId,
+                        teacher_id: row.teacherId || '',
+                        academic_year_id: row.yearId || '',
+                      }).toString();
+                      return (
+                        <tr key={`${row.teacherId || 'unassigned'}-${row.yearId}`} className="hover:bg-slate-50">
+                          <td className="px-6 py-3 font-medium text-black">
+                            {row.teacherId ? row.teacherName : (
+                              <span className="text-black">Not assigned yet</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-3 text-black">
+                            <div className="flex flex-wrap gap-1.5">
+                              {row.subjects.map((s) => (
+                                <span
+                                  key={s.id}
+                                  className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
+                                  title={s.streamName}
+                                >
+                                  {s.name}
+                                  {s.streamName !== 'All Streams' ? ` (${s.streamName})` : ''}
+                                </span>
+                              ))}
                             </div>
-                          ) : (
-                            a.Teacher?.full_name || <span className="text-black">Not assigned yet</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 font-medium text-black">{a.Subject?.name || '—'}</td>
-                        <td className="px-6 py-3 text-black">
-                          {a.Stream?.name || <span className="text-black">All Streams</span>}
-                        </td>
-                        <td className="px-6 py-3 text-black">{a.AcademicYear?.year_name || '—'}</td>
-                        <td className="px-6 py-3">
-                          {editingTeacherId !== a.id && (
-                            <button onClick={() => startEditTeacher(a)} className="text-blue-600 hover:underline">
+                          </td>
+                          <td className="px-6 py-3 text-black">{row.yearName}</td>
+                          <td className="whitespace-nowrap px-6 py-3">
+                            <Link to={`/dashboard/class-subjects/view?${params}`} className="text-blue-600 hover:underline">
+                              View
+                            </Link>
+                            <span className="mx-2 text-slate-300">|</span>
+                            <Link to={`/dashboard/class-subjects/edit?${params}`} className="text-blue-600 hover:underline">
                               Change Teacher
-                            </button>
-                          )}
-                          <span className="mx-2 text-slate-300">|</span>
-                          <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:underline">
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -18,6 +18,9 @@ import TeacherCreate from './features/teachers/TeacherCreate';
 import TeacherUpdate from './features/teachers/TeacherUpdate';
 import TeacherView from './features/teachers/TeacherView';
 import ClassSubjectList from './features/classSubjects/ClassSubjectList';
+import ClassSubjectCreate from './features/classSubjects/ClassSubjectCreate';
+import ClassSubjectUpdate from './features/classSubjects/ClassSubjectUpdate';
+import ClassSubjectView from './features/classSubjects/ClassSubjectView';
 import AcademicYearList from './features/academicYears/AcademicYearList';
 import TermList from './features/terms/TermList';
 import ExamList from './features/exams/ExamList';
@@ -141,6 +144,30 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher']}>
                   <ClassSubjectList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="class-subjects/add"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassSubjectCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="class-subjects/view"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassSubjectView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="class-subjects/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassSubjectUpdate />
                 </ProtectedRoute>
               }
             />
