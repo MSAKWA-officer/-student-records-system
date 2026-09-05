@@ -75,7 +75,8 @@ export default function AnnouncementView() {
                 <div>
                   <h2 className="text-lg font-semibold text-black">{announcement.title}</h2>
                   <p className="mt-1 text-xs text-black">
-                    Posted by {announcement.User?.full_name || 'Unknown'} · {formatDate(announcement.createdAt)}
+                    Posted by {announcement.posted_by_name || announcement.User?.full_name || 'Unknown'} ·{' '}
+                    {formatDate(announcement.createdAt)}
                   </p>
                 </div>
               </div>

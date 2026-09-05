@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { announcementsApi } from './announcementsApi';
 
-const emptyForm = { title: '', body: '', audience: 'all', is_active: true };
+const emptyForm = { title: '', body: '', audience: 'all', posted_by_name: '', is_active: true };
 
 export default function AnnouncementUpdate() {
   const { id } = useParams();
@@ -23,6 +23,7 @@ export default function AnnouncementUpdate() {
           title: a.title || '',
           body: a.body || '',
           audience: a.audience || 'all',
+          posted_by_name: a.posted_by_name || '',
           is_active: a.is_active !== undefined ? a.is_active : true,
         });
       })
@@ -53,6 +54,7 @@ export default function AnnouncementUpdate() {
         title: form.title.trim(),
         body: form.body.trim(),
         audience: form.audience,
+        posted_by_name: form.posted_by_name.trim() || null,
         is_active: form.is_active,
       });
       setSuccess('Announcement updated successfully!');
@@ -113,6 +115,21 @@ export default function AnnouncementUpdate() {
               <option value="students">Students</option>
               <option value="parents">Parents</option>
             </select>
+          </div>
+
+          <div className="mt-4">
+            <label className="mb-1 block text-sm font-medium text-black">Posted By</label>
+            <input
+              name="posted_by_name"
+              value={form.posted_by_name}
+              onChange={handleChange}
+              placeholder="e.g. Head Teacher — Mr. John Mwangi (optional)"
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-black">
+              Leave blank to just show your account name. This can be any name — it doesn't need to match a
+              registered user.
+            </p>
           </div>
 
           <div className="mt-4">

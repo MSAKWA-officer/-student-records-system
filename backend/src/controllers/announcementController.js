@@ -1,90 +1,85 @@
-const { Announcement } = require('../models');
+const { Announcement, User } = require('../models');
 
+const includeRelations = [{ model: User, attributes: ['id', 'full_name', 'email'] }];
+
+// GET /api/announcements?audience=&active=
 exports.getAllAnnouncements = async (req, res) => {
   try {
+    const { audience, active } = req.query;
     const where = {};
-    if (req.query.active === 'true') where.is_active = true;
-    if (req.query.active === 'false') where.is_active = false;
-    if (req.query.audience) where.audience = req.query.audience;
+    if (audience) where.audience = audience;
+    if (active !== undefined) where.is_active = active === 'true';
 
     const announcements = await Announcement.findAll({
       where,
+      include: includeRelations,
       order: [['createdAt', 'DESC']],
     });
-
-    // Frontend expects `body` — mirror `message` into `body` on the way out
-    // without renaming the actual DB column.
-    const shaped = announcements.map((a) => {
-      const json = a.toJSON();
-      return { ...json, body: json.message };
-    });
-
-    res.json(shaped);
+    res.json(announcements);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Failed to fetch announcements.', error: err.message });
   }
 };
 
+// GET /api/announcements/:id
 exports.getAnnouncementById = async (req, res) => {
   try {
-    const announcement = await Announcement.findByPk(req.params.id);
-    if (!announcement) return res.status(404).json({ message: 'Announcement haikupatikana' });
-    const json = announcement.toJSON();
-    res.json({ ...json, body: json.message });
+    const announcement = await Announcement.findByPk(req.params.id, { include: includeRelations });
+    if (!announcement) return res.status(404).json({ message: 'Announcement not found.' });
+    res.json(announcement);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Server error.', error: err.message });
   }
 };
 
+// POST /api/announcements
+// Body: { title, body, audience }
 exports.createAnnouncement = async (req, res) => {
   try {
-    // Frontend (AnnouncementCreate.jsx) sends `body`; DB column is `message`.
-    const { title, message, body, audience, is_active } = req.body;
-    const messageText = message ?? body;
+    const { title, body, audience, posted_by_name } = req.body;
+
+    if (!title || !body) {
+      return res.status(400).json({ message: 'Title and body are required.' });
+    }
 
     const announcement = await Announcement.create({
       title,
-      message: messageText,
+      body,
       audience: audience || 'all',
-      is_active: is_active !== undefined ? is_active : true,
-      posted_by: req.user?.id || null,
+      posted_by: req.user.id,
+      posted_by_name: posted_by_name || null,
     });
 
-    const json = announcement.toJSON();
-    res.status(201).json({ ...json, body: json.message });
+    const created = await Announcement.findByPk(announcement.id, { include: includeRelations });
+    res.status(201).json(created);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: 'Failed to post the announcement.', error: err.message });
   }
 };
 
+// PUT /api/announcements/:id
 exports.updateAnnouncement = async (req, res) => {
   try {
-    const { id } = req.params;
-    const announcement = await Announcement.findByPk(id);
-    if (!announcement) return res.status(404).json({ message: 'Announcement haikupatikana' });
+    const announcement = await Announcement.findByPk(req.params.id);
+    if (!announcement) return res.status(404).json({ message: 'Announcement not found.' });
 
-    const { body, message, ...rest } = req.body;
-    const updates = { ...rest };
-    if (message !== undefined || body !== undefined) {
-      updates.message = message ?? body;
-    }
-
-    await announcement.update(updates);
-    const json = announcement.toJSON();
-    res.json({ ...json, body: json.message });
+    await announcement.update(req.body);
+    const updated = await Announcement.findByPk(announcement.id, { include: includeRelations });
+    res.json(updated);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: 'Failed to update the announcement.', error: err.message });
   }
 };
 
+// DELETE /api/announcements/:id
 exports.deleteAnnouncement = async (req, res) => {
   try {
-    const { id } = req.params;
-    const announcement = await Announcement.findByPk(id);
-    if (!announcement) return res.status(404).json({ message: 'Announcement haikupatikana' });
+    const announcement = await Announcement.findByPk(req.params.id);
+    if (!announcement) return res.status(404).json({ message: 'Announcement not found.' });
+
     await announcement.destroy();
-    res.json({ message: 'Announcement imefutwa' });
+    res.json({ message: 'Announcement removed.' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: 'Server error.', error: err.message });
   }
 };

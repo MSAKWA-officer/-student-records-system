@@ -145,7 +145,7 @@ export default function AnnouncementList() {
                     <p className="mt-0.5 text-xs text-black">{excerpt(a.body)}</p>
                   </td>
                   <td className="px-6 py-3 text-black">{AUDIENCE_LABELS[a.audience] || a.audience}</td>
-                  <td className="px-6 py-3 text-black">{a.User?.full_name || '—'}</td>
+                  <td className="px-6 py-3 text-black">{a.posted_by_name || a.User?.full_name || '—'}</td>
                   <td className="px-6 py-3 text-black">{formatDate(a.createdAt)}</td>
                   <td className="px-6 py-3">
                     <span
