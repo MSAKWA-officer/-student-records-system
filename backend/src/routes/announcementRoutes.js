@@ -8,8 +8,8 @@ router.get('/', authenticate, announcementController.getAllAnnouncements);
 router.get('/:id', authenticate, announcementController.getAnnouncementById);
 
 // Only admins can create/edit/delete announcements
-router.post('/', authenticate, authorize(['admin']), announcementController.createAnnouncement);
-router.put('/:id', authenticate, authorize(['admin']), announcementController.updateAnnouncement);
-router.delete('/:id', authenticate, authorize(['admin']), announcementController.deleteAnnouncement);
+router.post('/', authenticate, authorize('admin'), announcementController.createAnnouncement);
+router.put('/:id', authenticate, authorize('admin'), announcementController.updateAnnouncement);
+router.delete('/:id', authenticate, authorize('admin'), announcementController.deleteAnnouncement);
 
 module.exports = router;
