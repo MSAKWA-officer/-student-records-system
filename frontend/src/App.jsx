@@ -14,6 +14,9 @@ import ResultSlipsPage from './features/results/ResultSlipsPage';
 import ClassList from './features/classes/ClassList';
 import SubjectList from './features/subjects/SubjectList';
 import TeacherList from './features/teachers/TeacherList';
+import TeacherCreate from './features/teachers/TeacherCreate';
+import TeacherUpdate from './features/teachers/TeacherUpdate';
+import TeacherView from './features/teachers/TeacherView';
 import ClassSubjectList from './features/classSubjects/ClassSubjectList';
 import AcademicYearList from './features/academicYears/AcademicYearList';
 import TermList from './features/terms/TermList';
@@ -106,6 +109,30 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
                   <TeacherList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="teachers/add"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <TeacherCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="teachers/:id"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
+                  <TeacherView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="teachers/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <TeacherUpdate />
                 </ProtectedRoute>
               }
             />
