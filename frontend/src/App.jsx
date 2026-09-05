@@ -26,6 +26,7 @@ import AttendanceList from './features/attendance/AttendanceList';
 import EnrollmentList from './features/enrollments/EnrollmentList';
 import ReportsList from './features/reports/ReportsList';
 import UserList from './features/users/UserList';
+import ClassGatewayManager from './features/smsGateways/ClassGatewayManager';
 
 export default function App() {
   return (
@@ -220,6 +221,15 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <UserList />
+                </ProtectedRoute>
+              }
+            />
+
+                        <Route
+              path="sms-gateways"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassGatewayManager />
                 </ProtectedRoute>
               }
             />

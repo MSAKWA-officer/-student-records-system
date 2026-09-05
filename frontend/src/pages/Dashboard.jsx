@@ -12,6 +12,7 @@ import {
   CalendarCheck2,
   UsersRound,
   ShieldCheck,
+  Megaphone,
   LogOut,
   Bell,
   Menu,
@@ -74,6 +75,7 @@ function buildNavConfig() {
       icon: UsersRound,
       roles: ['admin', 'headteacher'],
     },
+    { to: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
     { to: '/dashboard/users', label: 'Users', icon: ShieldCheck, roles: ['admin'] },
   ];
 }
@@ -88,6 +90,7 @@ function buildStudentNavConfig(user) {
     { to: `/dashboard/students/${sid}/report-card`, label: 'My Report Card', icon: ClipboardList },
     { to: `/dashboard/students/${sid}/result-slip`, label: 'My Result Slip', icon: ListChecks },
     { to: `/dashboard/students/${sid}/attendance`, label: 'My Attendance', icon: CalendarCheck2 },
+    { to: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
   ];
 }
 
@@ -201,14 +204,25 @@ export default function Dashboard() {
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
-          <School size={22} />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-sm">
+          <img
+            src="/logo.png"
+            alt="School logo"
+            className="h-full w-full object-contain"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+          <School size={20} className="hidden text-blue-700" />
         </div>
 
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-base font-bold tracking-wide sm:text-lg">Student Records System</p>
-          <p className="hidden text-xs font-medium text-white/80 sm:block">
-            Manage students, results and attendance
+          <p className="truncate text-base font-extrabold uppercase tracking-wide sm:text-lg">
+            Ubungo Islamic High School
+          </p>
+          <p className="hidden text-xs font-medium uppercase tracking-wider text-white/80 sm:block">
+            Student Records Management System
           </p>
         </div>
 
@@ -324,7 +338,7 @@ export default function Dashboard() {
           </main>
 
           <footer className="border-t border-slate-200 bg-white px-6 py-3 text-center text-xs text-black">
-            © {new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
+            © 2024–{new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
           </footer>
         </div>
       </div>
