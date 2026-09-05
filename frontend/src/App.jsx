@@ -26,6 +26,10 @@ import AttendanceList from './features/attendance/AttendanceList';
 import EnrollmentList from './features/enrollments/EnrollmentList';
 import ReportsList from './features/reports/ReportsList';
 import UserList from './features/users/UserList';
+import AnnouncementList from './features/announcements/AnnouncementList';
+import AnnouncementCreate from './features/announcements/AnnouncementCreate';
+import AnnouncementUpdate from './features/announcements/AnnouncementUpdate';
+import AnnouncementView from './features/announcements/AnnouncementView';
 import ClassGatewayManager from './features/smsGateways/ClassGatewayManager';
 
 export default function App() {
@@ -221,6 +225,28 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <UserList />
+                </ProtectedRoute>
+              }
+            />
+            {/* Announcements — everyone signed in can view/list them (the
+                backend only requires authentication for GET); only
+                admin/headteacher can create, edit or delete, matching
+                authorize('admin', 'headteacher') on the backend routes. */}
+            <Route path="announcements" element={<AnnouncementList />} />
+            <Route
+              path="announcements/create"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <AnnouncementCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="announcements/:id" element={<AnnouncementView />} />
+            <Route
+              path="announcements/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <AnnouncementUpdate />
                 </ProtectedRoute>
               }
             />
