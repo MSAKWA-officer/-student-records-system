@@ -11,7 +11,7 @@ const Announcement = sequelize.define('Announcement', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  body: {
+  message: {
     type: DataTypes.TEXT,
     allowNull: false,
   },

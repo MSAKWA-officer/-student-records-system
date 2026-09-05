@@ -11,7 +11,15 @@ exports.getAllAnnouncements = async (req, res) => {
       where,
       order: [['createdAt', 'DESC']],
     });
-    res.json(announcements);
+
+    // Frontend expects `body` — mirror `message` into `body` on the way out
+    // without renaming the actual DB column.
+    const shaped = announcements.map((a) => {
+      const json = a.toJSON();
+      return { ...json, body: json.message };
+    });
+
+    res.json(shaped);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -21,7 +29,8 @@ exports.getAnnouncementById = async (req, res) => {
   try {
     const announcement = await Announcement.findByPk(req.params.id);
     if (!announcement) return res.status(404).json({ message: 'Announcement haikupatikana' });
-    res.json(announcement);
+    const json = announcement.toJSON();
+    res.json({ ...json, body: json.message });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -29,15 +38,20 @@ exports.getAnnouncementById = async (req, res) => {
 
 exports.createAnnouncement = async (req, res) => {
   try {
-    const { title, body, audience, is_active } = req.body;
+    // Frontend (AnnouncementCreate.jsx) sends `body`; DB column is `message`.
+    const { title, message, body, audience, is_active } = req.body;
+    const messageText = message ?? body;
+
     const announcement = await Announcement.create({
       title,
-      body,
+      message: messageText,
       audience: audience || 'all',
       is_active: is_active !== undefined ? is_active : true,
       posted_by: req.user?.id || null,
     });
-    res.status(201).json(announcement);
+
+    const json = announcement.toJSON();
+    res.status(201).json({ ...json, body: json.message });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -48,8 +62,16 @@ exports.updateAnnouncement = async (req, res) => {
     const { id } = req.params;
     const announcement = await Announcement.findByPk(id);
     if (!announcement) return res.status(404).json({ message: 'Announcement haikupatikana' });
-    await announcement.update(req.body);
-    res.json(announcement);
+
+    const { body, message, ...rest } = req.body;
+    const updates = { ...rest };
+    if (message !== undefined || body !== undefined) {
+      updates.message = message ?? body;
+    }
+
+    await announcement.update(updates);
+    const json = announcement.toJSON();
+    res.json({ ...json, body: json.message });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
