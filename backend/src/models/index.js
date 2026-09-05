@@ -15,6 +15,8 @@ const Exam = require('./Exam');
 const Result = require('./Result');
 const Attendance = require('./Attendance');
 const Announcement = require('./Announcement');
+const ClassGateway = require('./ClassGateway');
+const SmsLog = require('./SmsLog');
 
 // --- Associations ---
 
@@ -25,6 +27,14 @@ Term.belongsTo(AcademicYear, { foreignKey: 'academic_year_id' });
 // SchoolClass -> Stream
 SchoolClass.hasMany(Stream, { foreignKey: 'school_class_id' });
 Stream.belongsTo(SchoolClass, { foreignKey: 'school_class_id' });
+
+//Gateway for each class
+SchoolClass.hasMany(ClassGateway, { foreignKey: 'class_id' });
+ClassGateway.belongsTo(SchoolClass, { foreignKey: 'class_id' });
+
+//SmsLog -> Student
+Student.hasMany(SmsLog, { foreignKey: 'student_id' });
+SmsLog.belongsTo(Student, { foreignKey: 'student_id' });
 
 // Student -> Enrollment <- SchoolClass / Stream / AcademicYear
 Student.hasMany(Enrollment, { foreignKey: 'student_id' });
@@ -120,4 +130,6 @@ module.exports = {
   Result,
   Attendance,
   Announcement,
+  ClassGateway,
+  SmsLog,
 };

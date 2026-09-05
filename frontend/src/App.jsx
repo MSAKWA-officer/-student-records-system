@@ -30,6 +30,7 @@ import AnnouncementList from './features/announcements/AnnouncementList';
 import AnnouncementCreate from './features/announcements/AnnouncementCreate';
 import AnnouncementUpdate from './features/announcements/AnnouncementUpdate';
 import AnnouncementView from './features/announcements/AnnouncementView';
+import ClassGatewayManager from './features/smsGateways/ClassGatewayManager';
 
 export default function App() {
   return (
@@ -246,6 +247,15 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher']}>
                   <AnnouncementUpdate />
+                </ProtectedRoute>
+              }
+            />
+
+                        <Route
+              path="sms-gateways"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassGatewayManager />
                 </ProtectedRoute>
               }
             />

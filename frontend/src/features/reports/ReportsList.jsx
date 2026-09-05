@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { classesApi } from '../classes/classesApi';
 import { studentsApi } from '../students/studentsApi';
 import { exportToExcel } from '../../utils/exportToExcel';
+import { smsApi } from '../smsGateways/smsApi';
 
 // Reports for a single class, e.g. Form 1, Form 2, etc. When no :classId is
 // present in the URL this shows the class picker (the "All Classes" view
@@ -23,6 +24,12 @@ export default function ReportsList() {
 
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Sends the results SMS to every parent/guardian of the students
+  // currently listed for this class (respects the stream filter, same as
+  // the table below), not a single student — that's why it lives here on
+  // the class-scoped Reports page rather than on the individual report.
+  const [sendingSms, setSendingSms] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -112,11 +119,31 @@ export default function ReportsList() {
     exportToExcel(data, `${label}-Reports`, 'Reports');
   }
 
+  async function handleSendClassSms() {
+    if (!classId || filteredStudents.length === 0) return;
+    const label = selectedClass?.name || 'darasa hili';
+    if (!window.confirm(`Tuma SMS ya matokeo kwa wazazi/walezi wa wanafunzi ${filteredStudents.length} wa ${label}?`)) {
+      return;
+    }
+    setSendingSms(true);
+    try {
+      await smsApi.sendClassResultsSms({
+        class_id: classId,
+        stream_id: streamId || undefined,
+      });
+      alert('SMS za matokeo zimetumwa kwa wazazi/walezi.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Imeshindwa kutuma SMS.');
+    } finally {
+      setSendingSms(false);
+    }
+  }
+
   return (
     <div className="p-4">
       {/* Everything for this page — breadcrumb, header, class picker,
-          toolbar (export/print/filters), and the table — lives inside one
-          card instead of separate boxes. */}
+          toolbar (export/print/SMS/filters), and the table — lives inside
+          one card instead of separate boxes. */}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Breadcrumb (only when reached via a class-specific link) */}
         {routeClassId && (
@@ -167,7 +194,7 @@ export default function ReportsList() {
 
         {classId && (
           <>
-            {/* Toolbar: title, export/print, stream filter, search */}
+            {/* Toolbar: title, export/print/SMS, stream filter, search */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
               <h3 className="text-sm font-semibold text-black">
                 Students in {selectedClass?.name}
@@ -189,6 +216,13 @@ export default function ReportsList() {
                   className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-black transition hover:bg-slate-50 disabled:opacity-50"
                 >
                   Print / PDF
+                </button>
+                <button
+                  onClick={handleSendClassSms}
+                  disabled={filteredStudents.length === 0 || sendingSms}
+                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                >
+                  {sendingSms ? 'Inatuma...' : 'Tuma SMS kwa Darasa Zima'}
                 </button>
                 <select
                   value={streamId}
