@@ -11,9 +11,14 @@ const Announcement = sequelize.define('Announcement', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  message: {
+  body: {
     type: DataTypes.TEXT,
     allowNull: false,
+  },
+  audience: {
+    type: DataTypes.ENUM('all', 'teachers', 'students', 'parents'),
+    allowNull: false,
+    defaultValue: 'all',
   },
   is_active: {
     type: DataTypes.BOOLEAN,

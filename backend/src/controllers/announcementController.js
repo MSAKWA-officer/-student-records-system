@@ -5,6 +5,7 @@ exports.getAllAnnouncements = async (req, res) => {
     const where = {};
     if (req.query.active === 'true') where.is_active = true;
     if (req.query.active === 'false') where.is_active = false;
+    if (req.query.audience) where.audience = req.query.audience;
 
     const announcements = await Announcement.findAll({
       where,
@@ -28,10 +29,11 @@ exports.getAnnouncementById = async (req, res) => {
 
 exports.createAnnouncement = async (req, res) => {
   try {
-    const { title, message, is_active } = req.body;
+    const { title, body, audience, is_active } = req.body;
     const announcement = await Announcement.create({
       title,
-      message,
+      body,
+      audience: audience || 'all',
       is_active: is_active !== undefined ? is_active : true,
       posted_by: req.user?.id || null,
     });
