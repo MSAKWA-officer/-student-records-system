@@ -8,6 +8,8 @@ router.use(authenticate); // all student routes require login
 // Listing all students is a staff-only action — a student account should
 // never be able to browse other students.
 router.get('/', authorize('admin', 'headteacher', 'teacher', 'staff'), studentController.getAllStudents);
+// Must come before '/:id' so 'eligible' isn't treated as an id.
+router.get('/eligible', authorize('admin', 'headteacher', 'teacher', 'staff'), studentController.getEligibleStudents);
 router.get('/:id/report-card', restrictToOwnStudentRecord, studentController.getReportCard);
 router.get('/:id', restrictToOwnStudentRecord, studentController.getStudentById);
 router.post('/', authorize('admin', 'headteacher'), studentController.createStudent);

@@ -51,6 +51,149 @@ exports.getAllStudents = async (req, res) => {
   }
 };
 
+// GET /api/students/eligible?school_class_id=&academic_year_id=&search=
+//
+// Returns the pool of students who should show up when enrolling INTO a
+// given class, so the admin isn't picking from the whole school every time:
+//
+//  - If the class has no "previous" class (the lowest level — e.g. Form 1 /
+//    Standard 1), the pool is brand-new students already in the system who
+//    have never had an enrollment record at all — i.e. students who need
+//    their very first enrollment, as Form 1.
+//  - Otherwise, the pool is students who were in the class one level below
+//    this one DURING THE PREVIOUS ACADEMIC YEAR (the year right before the
+//    one being enrolled into) — e.g. enrolling Form 2 for 2026 shows the
+//    students who were Form 1 in 2025, who now need to move up to Form 2.
+//    If there's no earlier academic year to compare against, this falls
+//    back to each student's latest enrollment overall.
+//
+// Either way, students who already have an enrollment for the selected
+// academic year are excluded (a student can only be enrolled once per year).
+exports.getEligibleStudents = async (req, res) => {
+  try {
+    const { school_class_id, academic_year_id, search } = req.query;
+    if (!school_class_id) {
+      return res.status(400).json({ message: 'school_class_id is required.' });
+    }
+
+    const targetClass = await SchoolClass.findByPk(school_class_id);
+    if (!targetClass) return res.status(404).json({ message: 'Class not found.' });
+
+    // IMPORTANT: "level" numbering restarts within each education level
+    // (e.g. Form 1..4 are levels 1..4 in "secondary", while Standard 1..7
+    // are ALSO levels 1..7 in "primary"). Without also matching
+    // education_level here, "Form 2" (level 2, secondary) could incorrectly
+    // resolve its "previous class" to "Standard 1" (level 1, primary)
+    // instead of "Form 1" (level 1, secondary) — which then made the
+    // eligible-student lookup below come back empty for every class above
+    // the entry level, since it was checking enrollments in the wrong class.
+    const previousClass = targetClass.level != null
+      ? await SchoolClass.findOne({
+          where: { level: targetClass.level - 1, education_level: targetClass.education_level },
+        })
+      : null;
+
+    // Students already booked for this academic year can't be enrolled again.
+    const alreadyEnrolledIds = new Set();
+    if (academic_year_id) {
+      const already = await Enrollment.findAll({
+        where: { academic_year_id },
+        attributes: ['student_id'],
+      });
+      already.forEach((e) => alreadyEnrolledIds.add(e.student_id));
+    }
+
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { first_name: { [Op.like]: `%${search}%` } },
+        { last_name: { [Op.like]: `%${search}%` } },
+        { admission_number: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    let mode;
+
+    if (!previousClass) {
+      // Entry-level class: pool is students with zero enrollment history.
+      mode = 'new';
+      const enrolledAnywhere = await Enrollment.findAll({
+        attributes: ['student_id'],
+        group: ['student_id'],
+      });
+      const excludeIds = new Set(enrolledAnywhere.map((e) => e.student_id));
+      alreadyEnrolledIds.forEach((id) => excludeIds.add(id));
+      if (excludeIds.size) where.id = { [Op.notIn]: Array.from(excludeIds) };
+    } else {
+      // Promotion class: pool is students who were in the previous class
+      // during the previous academic year specifically (when we can work
+      // out what "previous academic year" means), falling back to each
+      // student's latest enrollment overall otherwise.
+      mode = 'promotion';
+
+      let previousAcademicYear = null;
+      if (academic_year_id) {
+        const targetYear = await AcademicYear.findByPk(academic_year_id);
+        if (targetYear?.start_date) {
+          previousAcademicYear = await AcademicYear.findOne({
+            where: { start_date: { [Op.lt]: targetYear.start_date } },
+            order: [['start_date', 'DESC']],
+          });
+        }
+      }
+
+      const enrollmentWhere = { school_class_id: previousClass.id };
+      if (previousAcademicYear) {
+        enrollmentWhere.academic_year_id = previousAcademicYear.id;
+        const inPreviousYear = await Enrollment.findAll({
+          where: enrollmentWhere,
+          attributes: ['student_id'],
+        });
+        const eligibleIds = inPreviousYear
+          .map((e) => e.student_id)
+          .filter((id) => !alreadyEnrolledIds.has(id));
+        where.id = { [Op.in]: eligibleIds.length ? eligibleIds : [-1] };
+      } else {
+        // No specific previous year to compare against (e.g. no academic
+        // year picked yet, or this is the earliest year on record) — fall
+        // back to each student's latest enrollment overall.
+        const allEnrollments = await Enrollment.findAll({
+          include: [{ model: AcademicYear, attributes: ['id', 'start_date'] }],
+          order: [
+            [AcademicYear, 'start_date', 'DESC'],
+            ['id', 'DESC'],
+          ],
+        });
+        const latestByStudent = new Map();
+        allEnrollments.forEach((en) => {
+          if (!latestByStudent.has(en.student_id)) latestByStudent.set(en.student_id, en);
+        });
+        const eligibleIds = [];
+        latestByStudent.forEach((en, studentId) => {
+          if (en.school_class_id === previousClass.id && !alreadyEnrolledIds.has(studentId)) {
+            eligibleIds.push(studentId);
+          }
+        });
+        where.id = { [Op.in]: eligibleIds.length ? eligibleIds : [-1] };
+      }
+    }
+
+    const students = await Student.findAll({
+      where,
+      order: [['first_name', 'ASC']],
+      limit: 500,
+    });
+
+    res.json({
+      mode,
+      previous_class: previousClass ? { id: previousClass.id, name: previousClass.name } : null,
+      data: students,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch eligible students.', error: err.message });
+  }
+};
+
 // GET /api/students/:id
 exports.getStudentById = async (req, res) => {
   try {

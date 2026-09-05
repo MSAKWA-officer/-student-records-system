@@ -91,6 +91,7 @@ export default function StudentView() {
           <Row label="Relationship" value={student.guardian_relationship} />
         </Section>
 
+
         <div className="mt-6 flex gap-3">
           {/* These deliberately don't pass a `from` location: reached this
               way, the "relevant page" to return to is this student's own

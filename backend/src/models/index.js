@@ -7,6 +7,7 @@ const SchoolClass = require('./SchoolClass');
 const Stream = require('./Stream');
 const Student = require('./Student');
 const Enrollment = require('./Enrollment');
+const EnrollmentSubject = require('./EnrollmentSubject');
 const Teacher = require('./Teacher');
 const Subject = require('./Subject');
 const TeacherSubject = require('./TeacherSubject');
@@ -48,6 +49,14 @@ Enrollment.belongsTo(Stream, { foreignKey: 'stream_id' });
 
 AcademicYear.hasMany(Enrollment, { foreignKey: 'academic_year_id' });
 Enrollment.belongsTo(AcademicYear, { foreignKey: 'academic_year_id' });
+
+// Enrollment <-> Subject (the specific subjects THIS student takes for
+// THIS class/year — not every student in a class takes every subject)
+Enrollment.hasMany(EnrollmentSubject, { foreignKey: 'enrollment_id' });
+EnrollmentSubject.belongsTo(Enrollment, { foreignKey: 'enrollment_id' });
+
+Subject.hasMany(EnrollmentSubject, { foreignKey: 'subject_id' });
+EnrollmentSubject.belongsTo(Subject, { foreignKey: 'subject_id' });
 
 // Teacher <-> User (optional login link)
 User.hasOne(Teacher, { foreignKey: 'user_id' });
@@ -122,6 +131,7 @@ module.exports = {
   Stream,
   Student,
   Enrollment,
+  EnrollmentSubject,
   Teacher,
   Subject,
   TeacherSubject,

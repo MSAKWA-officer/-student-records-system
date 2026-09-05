@@ -24,6 +24,9 @@ import UploadResultsPage from './features/results/UploadResultsPage';
 import ClassResultSlipsPage from './features/results/ClassResultSlipsPage';
 import AttendanceList from './features/attendance/AttendanceList';
 import EnrollmentList from './features/enrollments/EnrollmentList';
+import EnrollmentCreate from './features/enrollments/EnrollmentCreate';
+import EnrollmentUpdate from './features/enrollments/EnrollmentUpdate';
+import EnrollmentView from './features/enrollments/EnrollmentView';
 import ReportsList from './features/reports/ReportsList';
 import UserList from './features/users/UserList';
 import AnnouncementList from './features/announcements/AnnouncementList';
@@ -31,6 +34,8 @@ import AnnouncementCreate from './features/announcements/AnnouncementCreate';
 import AnnouncementUpdate from './features/announcements/AnnouncementUpdate';
 import AnnouncementView from './features/announcements/AnnouncementView';
 import ClassGatewayManager from './features/smsGateways/ClassGatewayManager';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   return (
@@ -38,6 +43,11 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+
+             <Route path="/forgot-password" element={<ForgotPassword />} />
+   <Route path="/reset-password" element={<ResetPassword />} />
+
+
           <Route
             path="/dashboard"
             element={
@@ -213,10 +223,34 @@ export default function App() {
               }
             />
             <Route
-              path="enrollments/:classId"
+              path="enrollments/class/:classId"
               element={
                 <ProtectedRoute roles={['admin', 'headteacher']}>
                   <EnrollmentList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="enrollments/create"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <EnrollmentCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="enrollments/:id"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <EnrollmentView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="enrollments/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <EnrollmentUpdate />
                 </ProtectedRoute>
               }
             />
