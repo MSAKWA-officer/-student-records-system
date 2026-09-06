@@ -12,6 +12,7 @@ import {
   FileCheck2,
   CalendarCheck2,
   UsersRound,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { studentsApi } from '../features/students/studentsApi';
@@ -25,6 +26,7 @@ import { examsApi } from '../features/exams/examsApi';
 import { resultsApi } from '../features/results/resultsApi';
 import { attendanceApi } from '../features/attendance/attendanceApi';
 import { enrollmentsApi } from '../features/enrollments/enrollmentsApi';
+import { announcementsApi } from '../features/announcements/announcementsApi';
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -39,11 +41,28 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+
   useEffect(() => {
     if (isStudent) return; // this school-wide overview isn't relevant to a student login
     loadStats();
+    loadAnnouncements();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStudent]);
+
+  async function loadAnnouncements() {
+    setAnnouncementsLoading(true);
+    try {
+      // Backend already returns newest first, so item [0] is the current announcement.
+      const res = await announcementsApi.getAll({ active: 'true' });
+      setAnnouncements(res.data || []);
+    } catch (err) {
+      setAnnouncements([]);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }
 
   async function loadStats() {
     setLoading(true);
@@ -147,37 +166,98 @@ export default function DashboardHome() {
 
   return (
     <div>
+      {/* Top section stays full-width and is NOT split into columns. */}
       <div className="sims-card mb-6">
         <div className="sims-card-header">
-          <p className="sims-card-title">System Overview</p>
+          <p className="sims-card-title text-black">System Overview</p>
         </div>
-        <div className="sims-card-body">
-          <h1 className="text-lg font-bold text-slate-900">School Records Management System</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {currentYear ? `Current Academic Year: ${currentYear.year_name}` : 'A summary of all system data.'}
-          </p>
-        </div>
+        <div className="sims-card-body py-1">
+  <h1 className="text-sm font-bold text-black leading-none">School Records Management System</h1>
+  <p className="mt-0.5 text-xs text-black leading-none">
+    {currentYear ? `Current Academic Year: ${currentYear.year_name}` : 'A summary of all system data.'}
+  </p>
+</div>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Loading system data...</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      {!loading && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <StatCard icon={Users} label="Students" value={statValue('students')} />
-          <StatCard icon={UserSquare2} label="Teachers" value={statValue('teachers')} />
-          <StatCard icon={Layers} label="Classes" value={statValue('classes')} />
-          <StatCard icon={Layers} label="Streams" value={statValue('streams')} />
-          <StatCard icon={BookOpen} label="Subjects" value={statValue('subjects')} />
-          <StatCard icon={ListChecks} label="Subject Allocations" value={statValue('classSubjects')} />
-          <StatCard icon={CalendarRange} label="Academic Years" value={statValue('academicYears')} />
-          <StatCard icon={CalendarDays} label="Terms" value={statValue('terms')} />
-          <StatCard icon={ClipboardList} label="Exams" value={statValue('exams')} />
-          <StatCard icon={FileCheck2} label="Results Recorded" value={statValue('results')} />
-          <StatCard icon={CalendarCheck2} label="Today's Attendance" value={statValue('attendanceToday')} />
-          <StatCard icon={UsersRound} label="Class Enrollments" value={statValue('enrollments')} />
+      {/* Below the header: page split into two equal halves — announcements
+          on the left, the rest of the overview info on the right. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* LEFT: bottom-to-top animated announcements feed, current one first. */}
+        <div className="sims-card flex flex-col">
+          <div className="sims-card-header">
+            <p className="sims-card-title text-black flex items-center gap-2">
+              <Megaphone size={16} />
+              Announcements
+            </p>
+          </div>
+          <div className="sims-card-body">
+            <AnnouncementFeed announcements={announcements} loading={announcementsLoading} />
+          </div>
         </div>
-      )}
+
+        {/* RIGHT: the rest of the overview information (stat cards). */}
+        <div>
+          {loading && <p className="text-sm text-black">Loading system data...</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          {!loading && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <StatCard icon={Users} label="Students" value={statValue('students')} />
+              <StatCard icon={UserSquare2} label="Teachers" value={statValue('teachers')} />
+              <StatCard icon={Layers} label="Classes" value={statValue('classes')} />
+              <StatCard icon={Layers} label="Streams" value={statValue('streams')} />
+              <StatCard icon={BookOpen} label="Subjects" value={statValue('subjects')} />
+              <StatCard icon={ListChecks} label="Subject Allocations" value={statValue('classSubjects')} />
+              <StatCard icon={CalendarRange} label="Academic Years" value={statValue('academicYears')} />
+              <StatCard icon={CalendarDays} label="Terms" value={statValue('terms')} />
+              <StatCard icon={ClipboardList} label="Exams" value={statValue('exams')} />
+              <StatCard icon={FileCheck2} label="Results Recorded" value={statValue('results')} />
+              <StatCard icon={CalendarCheck2} label="Today's Attendance" value={statValue('attendanceToday')} />
+              <StatCard icon={UsersRound} label="Class Enrollments" value={statValue('enrollments')} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementFeed({ announcements, loading }) {
+  if (loading) {
+    return <p className="text-sm text-black">Loading announcements...</p>;
+  }
+
+  if (!announcements.length) {
+    return <p className="text-sm text-black">No announcements yet.</p>;
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Duplicate the list so the CSS animation can loop seamlessly from
+  // 0% to -50% without a visible jump, while the very first item shown
+  // is always the current (most recent / first in the array) announcement.
+  const loopItems = [...announcements, ...announcements];
+
+  // Slower scroll for longer lists so items stay readable.
+  const durationSeconds = Math.max(10, announcements.length * 5);
+
+  return (
+    <div className="announcement-viewport">
+      <ul
+        className="announcement-track"
+        style={{ animationDuration: `${durationSeconds}s` }}
+      >
+        {loopItems.map((a, i) => (
+          <li key={`${a.id}-${i}`} className="announcement-item">
+            <p className="text-sm font-semibold text-blue-700">{a.title}</p>
+            <p className="mt-1 text-sm text-black">{a.body}</p>
+            <p className="mt-1 text-xs text-black">{formatDate(a.createdAt)}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -189,8 +269,8 @@ function StatCard({ icon: Icon, label, value }) {
         <Icon size={19} />
       </div>
       <div>
-        <p className="text-xl font-bold text-slate-900">{value}</p>
-        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="text-xl font-bold text-black">{value}</p>
+        <p className="text-xs font-medium text-black">{label}</p>
       </div>
     </div>
   );

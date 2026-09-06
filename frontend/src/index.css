@@ -91,6 +91,36 @@
     box-shadow: 0 0 0 1px var(--brand-blue-600);
   }
 
+  /* Announcements feed on the dashboard home — scrolls bottom to top,
+     current announcement first, looping seamlessly. */
+  .announcement-viewport {
+    @apply overflow-hidden;
+    height: 360px;
+    mask-image: linear-gradient(to bottom, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+  }
+  .announcement-track {
+    animation-name: announcement-scroll-up;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .announcement-viewport:hover .announcement-track {
+    animation-play-state: paused;
+  }
+  .announcement-item {
+    @apply border-b border-slate-100 pb-3 pt-3;
+  }
+  .announcement-item:first-child {
+    @apply pt-0;
+  }
+  @keyframes announcement-scroll-up {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
+  }
+
   /* Stat cards on the dashboard home */
   .sims-stat-card {
     @apply flex items-center gap-3 rounded-md border border-slate-200 bg-white p-4 shadow-sm;
