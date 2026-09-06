@@ -1,10 +1,53 @@
-const { Result, Student, Exam, Subject, Term, AcademicYear } = require('../models');
+const { Result, Student, Exam, Subject, Term, AcademicYear, Enrollment, EnrollmentSubject, ClassSubject } = require('../models');
 
 const includeRelations = [
   { model: Student },
   { model: Subject },
   { model: Exam, include: [{ model: Term, include: [{ model: AcademicYear }] }] },
 ];
+
+// A teacher may only record/edit results for a subject they are actually
+// allocated to teach, for the class/stream/year the student is currently
+// enrolled in. Admin/headteacher are not restricted. Returns null if
+// allowed, or a { status, message } object describing why it's rejected.
+async function checkTeacherOwnership(req, { studentId, subjectId, examId }) {
+  if (req.user?.role !== 'teacher') return null;
+
+  const teacherId = req.user.teacher_id;
+  if (!teacherId) {
+    return { status: 403, message: 'Your account is not linked to a teacher profile.' };
+  }
+
+  const exam = await Exam.findByPk(examId, { include: [{ model: Term }] });
+  if (!exam) return { status: 404, message: 'Exam not found.' };
+  const academicYearId = exam.Term?.academic_year_id;
+
+  const enrollment = await Enrollment.findOne({
+    where: { student_id: studentId, ...(academicYearId ? { academic_year_id: academicYearId } : {}) },
+    order: [['id', 'DESC']],
+  });
+  if (!enrollment) {
+    return { status: 404, message: "This student's class enrollment could not be found for this exam's year." };
+  }
+
+  const allocation = await ClassSubject.findOne({
+    where: {
+      teacher_id: teacherId,
+      subject_id: subjectId,
+      school_class_id: enrollment.school_class_id,
+      ...(academicYearId ? { academic_year_id: academicYearId } : {}),
+    },
+  });
+  // stream_id = null on the allocation means "all streams" of that class.
+  const matchesStream =
+    allocation && (allocation.stream_id === null || allocation.stream_id === enrollment.stream_id);
+
+  if (!allocation || !matchesStream) {
+    return { status: 403, message: 'You are not assigned to teach this subject to this student.' };
+  }
+
+  return null;
+}
 
 // Simple grade based on the percentage of marks obtained
 function computeGrade(marksObtained, maxMarks) {
@@ -36,6 +79,14 @@ function computeDivision(totalPoints, subjectCount) {
 // GET /api/results/exam-slip?student_id=&exam_id=
 // Results for a single student for a single exam (e.g. First Term - Mock
 // Exam), including Subject, Marks, Grade, Remarks and Division.
+//
+// The subject list is built from the student's own registered subjects
+// (EnrollmentSubject, for the enrollment matching this exam's academic
+// year) — "kulingana na masomo aliyosajiliwa" — not just whichever
+// subjects happen to already have a result recorded. Subjects with no
+// mark yet are still listed (flagged as incomplete) instead of silently
+// disappearing, and Division is only computed automatically once every
+// registered subject has been graded, using the best 7 subjects sat.
 exports.getExamResultSlip = async (req, res) => {
   try {
     const { student_id, exam_id } = req.query;
@@ -49,26 +100,63 @@ exports.getExamResultSlip = async (req, res) => {
     const student = await Student.findByPk(student_id);
     if (!student) return res.status(404).json({ message: 'Student not found.' });
 
+    const academicYearId = exam.Term?.academic_year_id;
+
+    const enrollment = await Enrollment.findOne({
+      where: { student_id, ...(academicYearId ? { academic_year_id: academicYearId } : {}) },
+      order: [['id', 'DESC']],
+    });
+
+    const enrollmentSubjects = enrollment
+      ? await EnrollmentSubject.findAll({ where: { enrollment_id: enrollment.id }, include: [{ model: Subject }] })
+      : [];
+
     const results = await Result.findAll({
       where: { student_id, exam_id },
       include: [{ model: Subject }],
-      order: [[{ model: Subject }, 'name', 'ASC']],
+    });
+    const resultBySubjectId = new Map(results.map((r) => [r.subject_id, r]));
+
+    // Prefer the student's registered subject list; fall back to whatever
+    // results already exist (e.g. older data with no matching enrollment)
+    // so nothing that was already recorded ever disappears from the slip.
+    const subjectEntries = enrollmentSubjects.length
+      ? enrollmentSubjects.map((es) => ({ subject_id: es.subject_id, subject_name: es.Subject?.name }))
+      : results.map((r) => ({ subject_id: r.subject_id, subject_name: r.Subject?.name }));
+
+    const bySubjectId = new Map();
+    subjectEntries.forEach((s) => {
+      if (!bySubjectId.has(s.subject_id)) bySubjectId.set(s.subject_id, s);
+    });
+    const orderedSubjects = Array.from(bySubjectId.values()).sort((a, b) =>
+      (a.subject_name || '').localeCompare(b.subject_name || '')
+    );
+
+    const subjects = orderedSubjects.map((s) => {
+      const r = resultBySubjectId.get(s.subject_id);
+      const isComplete = !!r;
+      return {
+        result_id: r?.id || null,
+        subject_id: s.subject_id,
+        subject_name: s.subject_name,
+        marks_obtained: isComplete ? r.marks_obtained : null,
+        max_marks: exam.max_marks,
+        grade: isComplete ? r.grade : null,
+        remarks: isComplete ? r.remarks : null,
+        points: isComplete && r.grade ? GRADE_POINTS[r.grade] ?? null : null,
+        is_complete: isComplete,
+      };
     });
 
-    const subjects = results.map((r) => ({
-      result_id: r.id,
-      subject_id: r.subject_id,
-      subject_name: r.Subject?.name,
-      marks_obtained: r.marks_obtained,
-      max_marks: exam.max_marks,
-      grade: r.grade,
-      remarks: r.remarks,
-      points: r.grade ? GRADE_POINTS[r.grade] ?? null : null,
-    }));
-
+    // The slip as a whole is only "complete" once every registered subject
+    // has a mark — while anything is still missing, Division stays hidden
+    // rather than showing a figure that would change once the rest of the
+    // marks are entered.
+    const allComplete = subjects.length > 0 && subjects.every((s) => s.is_complete);
     const gradedSubjects = subjects.filter((s) => s.points != null);
-    const totalPoints = gradedSubjects.reduce((sum, s) => sum + s.points, 0);
-    const division = computeDivision(totalPoints, gradedSubjects.length);
+    const best7 = [...gradedSubjects].sort((a, b) => a.points - b.points).slice(0, 7);
+    const totalPoints = best7.reduce((sum, s) => sum + s.points, 0);
+    const division = allComplete && best7.length ? computeDivision(totalPoints, best7.length) : null;
 
     res.json({
       student: {
@@ -84,7 +172,9 @@ exports.getExamResultSlip = async (req, res) => {
         academic_year_name: exam.Term?.AcademicYear?.year_name,
       },
       subjects,
-      total_points: gradedSubjects.length ? totalPoints : null,
+      subjects_sat: gradedSubjects.length,
+      total_points: allComplete && best7.length ? totalPoints : null,
+      is_complete: allComplete,
       division,
     });
   } catch (err) {
@@ -93,6 +183,9 @@ exports.getExamResultSlip = async (req, res) => {
 };
 
 // GET /api/results?student_id=&exam_id=&subject_id=
+// A teacher only ever sees results for subjects they are allocated to
+// teach — they cannot browse another teacher's subject by simply changing
+// the subject_id filter.
 exports.getAllResults = async (req, res) => {
   try {
     const { student_id, exam_id, subject_id } = req.query;
@@ -100,6 +193,23 @@ exports.getAllResults = async (req, res) => {
     if (student_id) where.student_id = student_id;
     if (exam_id) where.exam_id = exam_id;
     if (subject_id) where.subject_id = subject_id;
+
+    if (req.user?.role === 'teacher') {
+      const teacherId = req.user.teacher_id;
+      const allocations = teacherId
+        ? await ClassSubject.findAll({ where: { teacher_id: teacherId }, attributes: ['subject_id'] })
+        : [];
+      const allowedSubjectIds = [...new Set(allocations.map((a) => a.subject_id))];
+
+      if (subject_id) {
+        if (!allowedSubjectIds.map(String).includes(String(subject_id))) {
+          return res.status(403).json({ message: 'You are not assigned to teach this subject.' });
+        }
+      } else {
+        if (allowedSubjectIds.length === 0) return res.json([]);
+        where.subject_id = allowedSubjectIds;
+      }
+    }
 
     const results = await Result.findAll({
       where,
@@ -146,6 +256,9 @@ exports.createResult = async (req, res) => {
       return res.status(400).json({ message: `Marks must be between 0 and ${exam.max_marks}.` });
     }
 
+    const ownershipError = await checkTeacherOwnership(req, { studentId: student_id, subjectId: subject_id, examId: exam_id });
+    if (ownershipError) return res.status(ownershipError.status).json({ message: ownershipError.message });
+
     const grade = computeGrade(marks_obtained, exam.max_marks);
 
     const result = await Result.create({
@@ -181,9 +294,19 @@ exports.updateResult = async (req, res) => {
       return res.status(400).json({ message: `Marks must be between 0 and ${maxMarks}.` });
     }
 
+    const ownershipError = await checkTeacherOwnership(req, {
+      studentId: result.student_id,
+      subjectId: result.subject_id,
+      examId: result.exam_id,
+    });
+    if (ownershipError) return res.status(ownershipError.status).json({ message: ownershipError.message });
+
     const grade = computeGrade(marksObtained, maxMarks);
 
-    await result.update({ ...req.body, grade });
+    // Only marks/remarks are editable here — student_id/subject_id/exam_id
+    // are intentionally ignored even if sent, so an update can't be used to
+    // move a result onto a student/subject the caller isn't allowed to touch.
+    await result.update({ marks_obtained: marksObtained, remarks: req.body.remarks ?? result.remarks, grade });
     const updated = await Result.findByPk(result.id, { include: includeRelations });
     res.json(updated);
   } catch (err) {

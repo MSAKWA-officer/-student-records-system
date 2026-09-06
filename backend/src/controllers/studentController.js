@@ -1,10 +1,10 @@
-const { Student, Enrollment, SchoolClass, Stream, AcademicYear, Teacher, ClassSubject, Subject, Term, Exam, Result, User } = require('../models');
+const { Student, Enrollment, EnrollmentSubject, SchoolClass, Stream, AcademicYear, Teacher, ClassSubject, Subject, Term, Exam, Result, User } = require('../models');
 const { Op } = require('sequelize');
 
-// GET /api/students?search=&class_id=&status=
+// GET /api/students?search=&class_id=&status=&subject_id=&academic_year_id=
 exports.getAllStudents = async (req, res) => {
   try {
-    const { search, class_id, stream_id, status, page = 1, limit = 50 } = req.query;
+    const { search, class_id, stream_id, subject_id, academic_year_id, status, page = 1, limit = 50 } = req.query;
     const where = {};
     if (status) where.status = status;
     if (search) {
@@ -15,20 +15,39 @@ exports.getAllStudents = async (req, res) => {
       ];
     }
 
+    // EnrollmentSubject is always included so callers (e.g. the O-Level
+    // Results pages) can tell exactly which subjects each student is
+    // registered/enrolled for, instead of assuming every student in a
+    // class takes every subject allocated to that class.
+    const enrollmentSubjectInclude = { model: EnrollmentSubject, include: [{ model: Subject }] };
+
     const include = [{
       model: Enrollment,
       include: [
         { model: SchoolClass },
         { model: Stream },
         { model: AcademicYear },
+        enrollmentSubjectInclude,
       ],
     }];
 
-    if (class_id || stream_id) {
-      const enrollmentWhere = {};
-      if (class_id) enrollmentWhere.school_class_id = class_id;
-      if (stream_id) enrollmentWhere.stream_id = stream_id;
+    const enrollmentWhere = {};
+    if (class_id) enrollmentWhere.school_class_id = class_id;
+    if (stream_id) enrollmentWhere.stream_id = stream_id;
+    if (academic_year_id) enrollmentWhere.academic_year_id = academic_year_id;
+    if (Object.keys(enrollmentWhere).length) {
       include[0].where = enrollmentWhere;
+      include[0].required = true;
+    }
+
+    // subject_id: only return students actually registered (enrolled) for
+    // this subject — "kulingana na masomo aliyosajiliwa". Not every
+    // student in a class takes every subject (electives), so a plain
+    // class_id filter isn't enough for subject-specific pages.
+    if (subject_id) {
+      include[0].required = true;
+      enrollmentSubjectInclude.where = { subject_id };
+      enrollmentSubjectInclude.required = true;
     }
 
     const students = await Student.findAndCountAll({
@@ -275,29 +294,47 @@ exports.getReportCard = async (req, res) => {
 
     const yearId = enrollment.academic_year_id;
 
-    // All subjects this student takes (from their class for that year).
-    // A subject allocation can be for a specific Stream (stream_id) or for ALL
-    // Streams (stream_id = null), so we take all allocations relevant to this
-    // student's stream.
+    // Only the subjects THIS student is actually registered/enrolled for
+    // (their EnrollmentSubject picks for this class/year) — not every
+    // subject allocated to the class, since electives mean not every
+    // student in a class takes every subject.
+    const enrollmentSubjects = await EnrollmentSubject.findAll({
+      where: { enrollment_id: enrollment.id },
+      include: [{ model: Subject }],
+    });
+
+    if (enrollmentSubjects.length === 0) {
+      return res.status(404).json({
+        message: 'This student has no registered subjects for this enrollment yet. Register their subjects from the Enrollments page first.',
+      });
+    }
+
+    // Teacher info per subject (display only) — a subject allocation can be
+    // for a specific Stream (stream_id) or for ALL Streams (stream_id =
+    // null), so we prefer the stream-specific allocation when both exist.
     const classSubjectsRaw = await ClassSubject.findAll({
       where: {
         school_class_id: enrollment.school_class_id,
         academic_year_id: yearId,
         [Op.or]: [{ stream_id: null }, { stream_id: enrollment.stream_id }],
       },
-      include: [{ model: Subject }, { model: Teacher }],
+      include: [{ model: Teacher }],
     });
-
-    // If a subject has both an "All Streams" allocation and one specific to this
-    // student's stream, use the stream-specific one (it has more accurate teacher info).
-    const classSubjectBySubjectId = new Map();
+    const teacherBySubjectId = new Map();
     classSubjectsRaw.forEach((cs) => {
-      const existing = classSubjectBySubjectId.get(cs.subject_id);
+      const existing = teacherBySubjectId.get(cs.subject_id);
       if (!existing || (cs.stream_id !== null && existing.stream_id === null)) {
-        classSubjectBySubjectId.set(cs.subject_id, cs);
+        teacherBySubjectId.set(cs.subject_id, cs);
       }
     });
-    const classSubjects = Array.from(classSubjectBySubjectId.values());
+
+    // Shape enrollment subjects to look like the old classSubjects list so
+    // the rest of this function (below) doesn't need to change.
+    const classSubjects = enrollmentSubjects.map((es) => ({
+      subject_id: es.subject_id,
+      Subject: es.Subject,
+      Teacher: teacherBySubjectId.get(es.subject_id)?.Teacher || null,
+    }));
 
     // Terms within scope (a single term or the whole year)
     const termWhere = term_id ? { id: term_id } : { academic_year_id: yearId };

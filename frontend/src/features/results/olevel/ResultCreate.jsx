@@ -1,19 +1,24 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { UploadCloud, Download, Search } from 'lucide-react';
-import { resultsApi } from './resultsApi';
-import { studentsApi } from '../students/studentsApi';
-import { examsApi } from '../exams/examsApi';
-import { subjectsApi } from '../subjects/Subjectsapi';
-import { classesApi } from '../classes/classesApi';
-import { classSubjectsApi } from '../classSubjects/classSubjectsApi';
+import { UploadCloud, Download, Search, GraduationCap } from 'lucide-react';
+import { resultsApi } from '../resultsApi';
+import { studentsApi } from '../../students/studentsApi';
+import { examsApi } from '../../exams/examsApi';
+import { classesApi } from '../../classes/classesApi';
+import { classSubjectsApi } from '../../classSubjects/classSubjectsApi';
+import { enrollmentsApi } from '../../enrollments/enrollmentsApi';
+import { useAuth } from '../../../context/AuthContext';
+import {
+  filterOLevelClasses,
+  autoRemark,
+  studentFullName,
+  computeBest7Division,
+} from './oLevelResultHelpers';
 
 // Recognised column header variants in an uploaded spreadsheet, normalised to
-// lowercase letters/digits only (spaces, underscores, punctuation stripped).
-// Only three columns are required from the user — Admission No., Student and
-// Marks. Everything else (grade, remarks, division/completeness) is worked
-// out by the system after the file is uploaded.
+// lowercase letters/digits only. Only three columns are required — Admission
+// No., Student and Marks. Grade/remarks/division are worked out automatically.
 const ADMISSION_HEADERS = ['admissionnumber', 'admissionno', 'admno', 'regno', 'registrationnumber'];
 const STUDENT_HEADERS = ['student', 'studentname', 'fullname', 'name'];
 const MARKS_HEADERS = ['marks', 'marksobtained', 'score', 'mark'];
@@ -31,9 +36,6 @@ function pickField(row, candidates) {
   return undefined;
 }
 
-// Loose name comparison — trims punctuation/extra spaces and accepts either
-// name being a subset of the other, so "John Doe" still matches a record
-// stored as "John A. Doe" while still catching a genuine mismatch.
 function normalizeName(s) {
   return String(s || '')
     .toLowerCase()
@@ -49,52 +51,29 @@ function namesMatch(a, b) {
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
-// Grade + Division logic mirrors the backend (resultController.js) so the
-// "Incomplete" / Division indicator shown here matches what a student's
-// report card will eventually show.
-const GRADE_POINTS = { A: 1, B: 2, C: 3, D: 4, F: 5 };
+// O-Level Results — Create/Upload page (Form 1-4 only). Reachable from the
+// "Upload Result" button on the O-Level ResultList page. A teacher only
+// ever sees the classes/subjects they are actually allocated to teach, so
+// they can only upload marks for their own students.
+export default function ResultCreate() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTeacher = user?.role === 'teacher';
 
-function computeDivision(totalPoints, subjectCount) {
-  if (!subjectCount) return null;
-  if (totalPoints <= 17) return 'I';
-  if (totalPoints <= 21) return 'II';
-  if (totalPoints <= 25) return 'III';
-  if (totalPoints <= 33) return 'IV';
-  return '0';
-}
-
-// Remarks are never typed manually anymore — they're derived automatically
-// from the grade once a result is saved.
-function autoRemark(grade) {
-  switch ((grade || '').toString().toUpperCase()) {
-    case 'A':
-      return 'Excellent';
-    case 'B':
-      return 'Very Good';
-    case 'C':
-      return 'Good';
-    case 'D':
-      return 'Satisfactory';
-    case 'F':
-      return 'Fail';
-    default:
-      return '—';
-  }
-}
-
-export default function UploadResultsPage() {
   const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [exams, setExams] = useState([]);
+  const [classSubjects, setClassSubjects] = useState([]); // allocations for the selected class
 
-  const [classId, setClassId] = useState('');
-  const [streamId, setStreamId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [examId, setExamId] = useState('');
+  const [classId, setClassId] = useState(searchParams.get('class_id') || '');
+  const [streamId, setStreamId] = useState(searchParams.get('stream_id') || '');
+  const [subjectId, setSubjectId] = useState(searchParams.get('subject_id') || '');
+  const [examId, setExamId] = useState(searchParams.get('exam_id') || '');
 
   const [students, setStudents] = useState([]);
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingClassSubjects, setLoadingClassSubjects] = useState(false);
   const [error, setError] = useState('');
 
   const fileInputRef = useRef(null);
@@ -106,31 +85,23 @@ export default function UploadResultsPage() {
 
   // --- Single Student Entry mode ---
   const [mode, setMode] = useState('bulk'); // 'bulk' | 'single'
-
   const [studentSearch, setStudentSearch] = useState('');
-  const [studentId, setStudentId] = useState('');
-  const [singleRows, setSingleRows] = useState([]); // [{ subjectId, subjectName, resultId, marks, grade }]
+  const [studentId, setStudentId] = useState(searchParams.get('student_id') || '');
+  const [singleRows, setSingleRows] = useState([]);
   const [loadingSingle, setLoadingSingle] = useState(false);
   const [singleError, setSingleError] = useState('');
   const [savingSingle, setSavingSingle] = useState(false);
   const [singleSummary, setSingleSummary] = useState('');
-  // Persists after the form above resets on save, so the outcome stays
-  // visible instead of disappearing along with the cleared form.
   const [lastSingleSummary, setLastSingleSummary] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        const [classesRes, subjectsRes, examsRes] = await Promise.all([
-          classesApi.getAll(),
-          subjectsApi.getAll(),
-          examsApi.getAll(),
-        ]);
-        setClasses(classesRes.data);
-        setSubjects(subjectsRes.data);
+        const [classesRes, examsRes] = await Promise.all([classesApi.getAll(), examsApi.getAll()]);
+        setClasses(filterOLevelClasses(classesRes.data));
         setExams(examsRes.data);
       } catch (err) {
-        setError('Failed to load base data (classes/subjects/exams).');
+        setError('Failed to load base data (classes/exams).');
       } finally {
         setLoadingLookups(false);
       }
@@ -140,16 +111,59 @@ export default function UploadResultsPage() {
   const selectedClass = useMemo(() => classes.find((c) => String(c.id) === String(classId)), [classes, classId]);
   const streamsForSelectedClass = selectedClass?.Streams || [];
   const selectedExam = useMemo(() => exams.find((ex) => String(ex.id) === String(examId)), [exams, examId]);
+  const academicYearId = selectedExam?.Term?.academic_year_id;
+
+  // Subjects actually allocated to this class (and, for a teacher, only the
+  // ones allocated to them) — never the full subject catalogue. This is
+  // what makes sure a teacher can only ever upload marks for a subject they
+  // teach, and only for students in a class that subject is allocated to.
+  useEffect(() => {
+    if (!classId) {
+      setClassSubjects([]);
+      return;
+    }
+    setLoadingClassSubjects(true);
+    classSubjectsApi
+      .getAll({
+        school_class_id: classId,
+        ...(streamId ? { stream_id: streamId } : {}),
+        ...(academicYearId ? { academic_year_id: academicYearId } : {}),
+        ...(isTeacher ? { teacher_id: user.teacher_id } : {}),
+      })
+      .then((res) => setClassSubjects(res.data))
+      .catch(() => setClassSubjects([]))
+      .finally(() => setLoadingClassSubjects(false));
+  }, [classId, streamId, academicYearId, isTeacher, user?.teacher_id]);
+
+  const availableSubjects = useMemo(() => {
+    const bySubject = new Map();
+    classSubjects.forEach((cs) => {
+      const existing = bySubject.get(cs.subject_id);
+      if (!existing || (cs.stream_id !== null && existing.stream_id === null)) {
+        bySubject.set(cs.subject_id, cs);
+      }
+    });
+    return Array.from(bySubject.values())
+      .map((cs) => cs.Subject)
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [classSubjects]);
+
+  // If the previously chosen subject is no longer in this class's allocated
+  // list (e.g. after switching class), clear it so nothing is uploaded to
+  // a subject this teacher isn't assigned to.
+  useEffect(() => {
+    if (subjectId && !availableSubjects.some((s) => String(s.id) === String(subjectId))) {
+      setSubjectId('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableSubjects]);
 
   const readyToUpload = mode === 'bulk' && classId && subjectId && examId;
-  // The student picker only needs a Class selected — Exam is only required
-  // once a student is picked, to load their subjects/marks for that exam.
   const showSingleSection = mode === 'single' && !!classId;
   const singleReady = mode === 'single' && classId && examId;
 
   useEffect(() => {
-    setStreamId('');
-    setStudentId('');
     setStudentSearch('');
     setLastSingleSummary('');
   }, [classId]);
@@ -170,6 +184,11 @@ export default function UploadResultsPage() {
     try {
       const params = { class_id: classId, limit: 1000 };
       if (streamId) params.stream_id = streamId;
+      // Bulk mode: only students actually registered (enrolled) for the
+      // chosen subject are loaded — some subjects are optional/elective,
+      // so not every student in the class/stream takes this subject.
+      if (mode === 'bulk' && subjectId) params.subject_id = subjectId;
+      if (academicYearId) params.academic_year_id = academicYearId;
       const res = await studentsApi.getAll(params);
       setStudents(res.data.data || []);
     } catch (err) {
@@ -179,23 +198,16 @@ export default function UploadResultsPage() {
     }
   }
 
-  function studentName(s) {
-    return [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(' ');
-  }
-
-  // Students matching the admission-number/name search, for the Single
-  // Student Entry picker below.
   const filteredStudents = useMemo(() => {
     const term = studentSearch.trim().toLowerCase();
     if (!term) return students;
     return students.filter(
       (s) =>
         String(s.admission_number).toLowerCase().includes(term) ||
-        studentName(s).toLowerCase().includes(term)
+        studentFullName(s).toLowerCase().includes(term)
     );
   }, [students, studentSearch]);
 
-  // --- Single Student Entry: load class subjects + existing results ---
   useEffect(() => {
     if (!singleReady || !studentId) {
       setSingleRows([]);
@@ -210,20 +222,36 @@ export default function UploadResultsPage() {
     setSingleError('');
     setSingleSummary('');
     try {
-      const academicYearId = selectedExam?.Term?.academic_year_id;
-      const [csRes, resultsRes] = await Promise.all([
+      const [csRes, resultsRes, enrollRes] = await Promise.all([
         classSubjectsApi.getAll({
           school_class_id: classId,
           ...(streamId ? { stream_id: streamId } : {}),
           ...(academicYearId ? { academic_year_id: academicYearId } : {}),
+          ...(isTeacher ? { teacher_id: user.teacher_id } : {}),
         }),
         resultsApi.getAll({ student_id: studentId, exam_id: examId }),
+        enrollmentsApi.getAll({
+          student_id: studentId,
+          ...(academicYearId ? { academic_year_id: academicYearId } : {}),
+        }),
       ]);
 
-      // A subject can have both an "All Streams" allocation (stream_id=null)
-      // and one specific to the student's stream; prefer the more specific one.
+      // The subjects THIS student is actually registered (enrolled) for —
+      // not every subject allocated to the class, since electives mean not
+      // every student in a class takes every subject.
+      const enrollment = (enrollRes.data || [])[0];
+      if (!enrollment) {
+        setSingleError(
+          'This student has no subject registration (enrollment) for this exam\'s academic year yet. Register their subjects from the Enrollments page first.'
+        );
+        setSingleRows([]);
+        return;
+      }
+      const enrolledSubjectIds = new Set((enrollment.EnrollmentSubjects || []).map((es) => es.subject_id));
+
       const bySubject = new Map();
       csRes.data.forEach((cs) => {
+        if (!enrolledSubjectIds.has(cs.subject_id)) return; // not registered for this subject
         const existing = bySubject.get(cs.subject_id);
         if (!existing || (cs.stream_id !== null && existing.stream_id === null)) {
           bySubject.set(cs.subject_id, cs);
@@ -254,28 +282,17 @@ export default function UploadResultsPage() {
     }
   }
 
-  function updateSingleRow(subjectId, field, value) {
-    setSingleRows((rows) => rows.map((r) => (r.subjectId === subjectId ? { ...r, [field]: value } : r)));
+  function updateSingleRow(subjId, field, value) {
+    setSingleRows((rows) => rows.map((r) => (r.subjectId === subjId ? { ...r, [field]: value } : r)));
   }
 
-  // Completeness + Division summary for the student currently open in
-  // Single Student Entry. A student is "Incomplete" if any subject they are
-  // registered for has no saved result yet for this exam — in that case the
-  // Division also reads "Incomplete" instead of a Roman numeral.
   const singleSummaryStats = useMemo(() => {
     const total = singleRows.length;
     const graded = singleRows.filter((r) => r.resultId && r.grade);
     const missing = total - graded.length;
     const isComplete = total > 0 && missing === 0;
-    // Division points come from only the best 7 subjects (lowest points =
-    // strongest grades) among those sat — not every subject recorded. If
-    // fewer than 7 were sat, all of them count. Mirrors StudentReportCard.
-    const best7 = [...graded]
-      .sort((a, b) => (GRADE_POINTS[a.grade] || 0) - (GRADE_POINTS[b.grade] || 0))
-      .slice(0, 7);
-    const totalPoints = best7.reduce((sum, r) => sum + (GRADE_POINTS[r.grade] || 0), 0);
-    const division = isComplete ? computeDivision(totalPoints, best7.length) : null;
-    return { total, gradedCount: graded.length, missing, isComplete, division };
+    const { division } = computeBest7Division(graded);
+    return { total, gradedCount: graded.length, missing, isComplete, division: isComplete ? division : null };
   }, [singleRows]);
 
   async function saveSingleStudentResults() {
@@ -317,13 +334,10 @@ export default function UploadResultsPage() {
     }
 
     setSavingSingle(false);
-    const summaryMsg = `Saved ${ok} of ${rowsToSave.length}${failed ? ` — ${failed} failed` : ''} for ${studentName(
-      students.find((s) => String(s.id) === String(studentId)) || {}
-    ) || 'the student'}.`;
+    const summaryMsg = `Saved ${ok} of ${rowsToSave.length}${failed ? ` — ${failed} failed` : ''} for ${
+      studentFullName(students.find((s) => String(s.id) === String(studentId)) || {}) || 'the student'
+    }.`;
 
-    // Clear the entry form (student + subject rows) instead of leaving the
-    // just-saved data sitting on screen — keep the outcome message so the
-    // user still sees what happened, then they can pick the next student.
     setLastSingleSummary(summaryMsg);
     setStudentId('');
     setStudentSearch('');
@@ -339,19 +353,16 @@ export default function UploadResultsPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  // Lets the user download a ready-made template for the currently selected
-  // class/stream — Admission No. and Student already filled in from the real
-  // roster, Marks left blank — so there's no guesswork about column names.
   function downloadBulkTemplate() {
     const rows =
       students.length > 0
-        ? students.map((s) => ({ 'Admission No.': s.admission_number, Student: studentName(s), Marks: '' }))
+        ? students.map((s) => ({ 'Admission No.': s.admission_number, Student: studentFullName(s), Marks: '' }))
         : [{ 'Admission No.': '', Student: '', Marks: '' }];
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Results');
     const suffix = selectedClass ? `-${selectedClass.name.replace(/\s+/g, '-')}` : '';
-    XLSX.writeFile(workbook, `results-upload-template${suffix}.xlsx`);
+    XLSX.writeFile(workbook, `o-level-results-upload-template${suffix}.xlsx`);
   }
 
   function handleFileSelected(e) {
@@ -388,7 +399,7 @@ export default function UploadResultsPage() {
           const student = students.find(
             (s) => String(s.admission_number).trim().toLowerCase() === admissionNumber.toLowerCase()
           );
-          const nameMatches = student ? namesMatch(studentNameRaw, studentName(student)) : false;
+          const nameMatches = student ? namesMatch(studentNameRaw, studentFullName(student)) : false;
           const marksNumber = marksRaw === '' || marksRaw === undefined ? NaN : Number(marksRaw);
           const maxMarks = selectedExam?.max_marks;
           const marksValid = !Number.isNaN(marksNumber) && marksNumber >= 0 && (!maxMarks || marksNumber <= maxMarks);
@@ -398,7 +409,7 @@ export default function UploadResultsPage() {
             studentNameRaw,
             marksRaw: marksRaw === undefined ? '' : String(marksRaw),
             studentId: student?.id || null,
-            studentName: student ? studentName(student) : null,
+            studentName: student ? studentFullName(student) : null,
             nameMatches,
             marksValid,
           };
@@ -414,8 +425,6 @@ export default function UploadResultsPage() {
     reader.readAsArrayBuffer(file);
   }
 
-  // A row is only saved once its admission number AND student name both
-  // match the same real student, and its marks are valid.
   const matchedRows = importRows.filter((r) => r.studentId && r.nameMatches && r.marksValid);
   const unmatchedRows = importRows.filter((r) => !r.studentId);
   const mismatchedRows = importRows.filter((r) => r.studentId && !r.nameMatches);
@@ -442,7 +451,6 @@ export default function UploadResultsPage() {
           subject_id: subjectId,
           marks_obtained: Number(row.marksRaw),
         };
-        // Try create first; if a result already exists, fall back to update.
         try {
           await resultsApi.create(payload);
         } catch (err) {
@@ -464,8 +472,6 @@ export default function UploadResultsPage() {
       }
     }
     setImporting(false);
-    // Clear the uploaded file and preview table so the form doesn't sit
-    // there showing already-saved rows — keep only the outcome message.
     setImportRows([]);
     setImportFileName('');
     setImportError('');
@@ -475,23 +481,27 @@ export default function UploadResultsPage() {
 
   return (
     <div className="p-4">
-      {/* Everything on this page — header, mode switch, filters, and both
-          the bulk-upload and single-student sections — lives inside this
-          one card/div with a single background. */}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Header */}
         <div className="border-b border-slate-100 px-6 py-5">
-          <Link to="/dashboard/results/view" className="text-sm text-blue-600 hover:underline">
-            ← Back
+          <Link to="/dashboard/results/o-level" className="text-sm text-blue-600 hover:underline">
+            ← Back to O-Level Results
           </Link>
-          <h2 className="mt-2 text-xl font-semibold text-black">Upload Results</h2>
-          <p className="mt-1 text-sm text-black">
-            Upload student results from an Excel/CSV file — choose the Class, Stream, Subject and Exam the
-            file applies to first.
-          </p>
+          <div className="mt-2 flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-700">
+              <GraduationCap size={18} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-black">Upload O-Level Results</h2>
+              <p className="mt-1 text-sm text-black">
+                Form 1 - Form 4 only. Choose the Class, Stream, Subject and Exam the file/entry applies to first.
+                {isTeacher && ' Only classes/subjects allocated to you are shown.'}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Mode switch — kept in its original colours */}
+        {/* Mode switch */}
         <div className="flex gap-2 border-b border-slate-100 px-6 py-4">
           <button
             type="button"
@@ -519,7 +529,11 @@ export default function UploadResultsPage() {
             <label className="mb-1 block text-sm font-medium text-black">Class *</label>
             <select
               value={classId}
-              onChange={(e) => setClassId(e.target.value)}
+              onChange={(e) => {
+                setClassId(e.target.value);
+                setStreamId('');
+                setSubjectId('');
+              }}
               disabled={loadingLookups}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             >
@@ -528,6 +542,11 @@ export default function UploadResultsPage() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+            {classes.length === 0 && !loadingLookups && (
+              <p className="mt-1 text-xs text-amber-600">
+                {isTeacher ? 'You are not allocated to any O-Level class yet.' : 'No O-Level (Form 1-4) classes found.'}
+              </p>
+            )}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-black">Stream</label>
@@ -549,14 +568,19 @@ export default function UploadResultsPage() {
               <select
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
-                disabled={loadingLookups}
+                disabled={!classId || loadingClassSubjects}
                 className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">-- Select Subject --</option>
-                {subjects.map((sub) => (
+                {availableSubjects.map((sub) => (
                   <option key={sub.id} value={sub.id}>{sub.name}</option>
                 ))}
               </select>
+              {classId && !loadingClassSubjects && availableSubjects.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">
+                  {isTeacher ? 'No subjects are allocated to you for this class.' : 'No subjects allocated to this class.'}
+                </p>
+              )}
             </div>
           )}
           <div>
@@ -602,11 +626,10 @@ export default function UploadResultsPage() {
             <p className="mt-1 text-xs text-black">
               Upload an .xlsx, .xls or .csv file with exactly three columns —{' '}
               <span className="font-medium">Admission No.</span>, <span className="font-medium">Student</span> and{' '}
-              <span className="font-medium">Marks</span>. Everything else (grade, remarks, division/completeness)
-              is filled in automatically once the file is uploaded. Results apply to{' '}
-              <span className="font-medium">{selectedClass?.name}</span>
+              <span className="font-medium">Marks</span>. Grade, remarks and division are filled in automatically.
+              Results apply to <span className="font-medium">{selectedClass?.name}</span>
               {streamId ? ` · Stream ${streamsForSelectedClass.find((s) => String(s.id) === String(streamId))?.name}` : ''} ·{' '}
-              {subjects.find((s) => String(s.id) === String(subjectId))?.name || 'this subject'} ·{' '}
+              {availableSubjects.find((s) => String(s.id) === String(subjectId))?.name || 'this subject'} ·{' '}
               {selectedExam?.name || 'this exam'}.
             </p>
 
@@ -635,18 +658,22 @@ export default function UploadResultsPage() {
                       Clear
                     </button>
                   )}
-                  <span className="text-xs text-black">{students.length} students in this selection</span>
+                  <span className="text-xs text-black">
+                    {students.length} student(s) registered for this subject in this selection
+                  </span>
                 </div>
 
                 {importError && <p className="mt-3 text-sm text-red-600">{importError}</p>}
 
-                {/* Persists after the form/preview below is cleared on save,
-                    so the outcome stays visible instead of vanishing. */}
                 {importSummary && importRows.length === 0 && (
                   <p className="mt-3 text-sm font-medium text-emerald-700">
                     Saved {importSummary.ok} of {importSummary.total}
                     {importSummary.failed > 0 ? ` — ${importSummary.failed} failed` : ''}. Upload another file to
-                    continue.
+                    continue, or{' '}
+                    <Link to="/dashboard/results/o-level" className="underline">
+                      go back to O-Level Results
+                    </Link>
+                    .
                   </p>
                 )}
 
@@ -733,7 +760,7 @@ export default function UploadResultsPage() {
               Pick a student from <span className="font-medium">{selectedClass?.name}</span>
               {streamId ? ` · Stream ${streamsForSelectedClass.find((s) => String(s.id) === String(streamId))?.name}` : ''}
               {examId
-                ? <> , then enter marks per subject for <span className="font-medium">{selectedExam?.name || 'this exam'}</span>. Grade, remarks and division are filled in automatically.</>
+                ? <> , then enter marks per subject for <span className="font-medium">{selectedExam?.name || 'this exam'}</span>. Only subjects this student is registered (enrolled) for are shown. Grade, remarks and division are filled in automatically.</>
                 : '. Select an Exam above to load and record their subjects/marks.'}
             </p>
 
@@ -758,9 +785,6 @@ export default function UploadResultsPage() {
                   </div>
                 </div>
 
-                {/* Full class list, right on the page — click a row (or
-                    "Fill Marks") to select that student below, instead of
-                    hunting through a small dropdown. */}
                 <div className="mt-3 max-h-80 overflow-y-auto overflow-x-auto rounded-md border border-slate-200">
                   <table className="w-full text-left text-sm">
                     <thead className="sticky top-0 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
@@ -775,24 +799,20 @@ export default function UploadResultsPage() {
                       {filteredStudents.map((s) => {
                         const selected = String(studentId) === String(s.id);
                         const streamName =
-                          (s.Enrollments || []).find((e) =>
-                            streamId ? e.stream_id === Number(streamId) : true
-                          )?.Stream?.name ||
+                          (s.Enrollments || []).find((e) => (streamId ? e.stream_id === Number(streamId) : true))?.Stream?.name ||
                           (s.Enrollments || [])[0]?.Stream?.name ||
                           '—';
                         return (
                           <tr key={s.id} className={selected ? 'bg-blue-50' : 'hover:bg-slate-50'}>
                             <td className="px-3 py-2 text-black">{s.admission_number}</td>
-                            <td className="px-3 py-2 font-medium text-black">{studentName(s)}</td>
+                            <td className="px-3 py-2 font-medium text-black">{studentFullName(s)}</td>
                             <td className="px-3 py-2 text-black">{streamName}</td>
                             <td className="px-3 py-2">
                               <button
                                 type="button"
                                 onClick={() => setStudentId(String(s.id))}
                                 className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
-                                  selected
-                                    ? 'border-blue-600 bg-blue-600 text-white'
-                                    : 'border-blue-200 text-blue-600 hover:bg-blue-50'
+                                  selected ? 'border-blue-600 bg-blue-600 text-white' : 'border-blue-200 text-blue-600 hover:bg-blue-50'
                                 }`}
                               >
                                 {selected ? 'Selected' : 'Fill Marks'}
@@ -824,20 +844,20 @@ export default function UploadResultsPage() {
                     {singleError && <p className="text-sm text-red-600">{singleError}</p>}
 
                     {!loadingSingle && singleRows.length === 0 && !singleError && (
-                      <p className="text-sm text-black">No subjects assigned to this class/stream.</p>
+                      <p className="text-sm text-black">
+                        {isTeacher
+                          ? 'You are not allocated to teach any of the subjects this student is registered for in this class/stream.'
+                          : 'This student is not registered for any subject that is allocated to this class/stream.'}
+                      </p>
                     )}
 
                     {!loadingSingle && singleRows.length > 0 && (
                       <>
                         <div className="mb-2 flex items-center justify-between">
                           <p className="text-sm font-semibold text-black">
-                            Marks for {studentName(students.find((s) => String(s.id) === String(studentId)) || {})}
+                            Marks for {studentFullName(students.find((s) => String(s.id) === String(studentId)) || {})}
                           </p>
-                          <button
-                            type="button"
-                            onClick={() => setStudentId('')}
-                            className="text-xs text-blue-600 hover:underline"
-                          >
+                          <button type="button" onClick={() => setStudentId('')} className="text-xs text-blue-600 hover:underline">
                             ← Choose a different student
                           </button>
                         </div>
@@ -847,19 +867,11 @@ export default function UploadResultsPage() {
                           }`}
                         >
                           <span className="font-medium">
-
                             {singleSummaryStats.gradedCount} of {singleSummaryStats.total} subjects recorded
-                            {singleSummaryStats.missing > 0
-                              ? ` — ${singleSummaryStats.missing} subject(s) not yet examined`
-                              : ''}
+                            {singleSummaryStats.missing > 0 ? ` — ${singleSummaryStats.missing} subject(s) not yet examined` : ''}
                           </span>
                           <span className="font-semibold">
-                            Division:{' '}
-                            {singleSummaryStats.isComplete
-                              ? singleSummaryStats.division != null
-                                ? singleSummaryStats.division
-                                : '—'
-                              : 'Incomplete'}
+                            Division: {singleSummaryStats.isComplete ? singleSummaryStats.division ?? '—' : 'Incomplete'}
                           </span>
                         </div>
 
@@ -906,6 +918,13 @@ export default function UploadResultsPage() {
                             {savingSingle ? 'Saving...' : 'Save Results'}
                           </button>
                           {singleSummary && <span className="text-sm text-black">{singleSummary}</span>}
+                          <button
+                            type="button"
+                            onClick={() => navigate('/dashboard/results/o-level')}
+                            className="text-sm text-blue-600 hover:underline"
+                          >
+                            Done — go to O-Level Results
+                          </button>
                         </div>
                       </>
                     )}

@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Op } = require('sequelize');
-const { User, Student, PasswordReset } = require('../models');
+const { User, Student, Teacher, PasswordReset } = require('../models');
 const { sendPasswordResetEmail } = require('../services/mailService');
 
 exports.login = async (req, res) => {
@@ -29,8 +29,17 @@ exports.login = async (req, res) => {
       studentId = linkedStudent?.id || null;
     }
 
+    // If this is a teacher login, find the linked Teacher record so the
+    // frontend/API can scope "my classes/subjects/students" to this teacher
+    // only (e.g. when recording or viewing exam results).
+    let teacherId = null;
+    if (user.role === 'teacher') {
+      const linkedTeacher = await Teacher.findOne({ where: { user_id: user.id } });
+      teacherId = linkedTeacher?.id || null;
+    }
+
     const token = jwt.sign(
-      { id: user.id, role: user.role, email: user.email, student_id: studentId },
+      { id: user.id, role: user.role, email: user.email, student_id: studentId, teacher_id: teacherId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
     );
@@ -43,6 +52,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         student_id: studentId,
+        teacher_id: teacherId,
       },
     });
   } catch (err) {
@@ -62,7 +72,13 @@ exports.me = async (req, res) => {
       studentId = linkedStudent?.id || null;
     }
 
-    res.json({ ...user.toJSON(), student_id: studentId });
+    let teacherId = null;
+    if (user?.role === 'teacher') {
+      const linkedTeacher = await Teacher.findOne({ where: { user_id: user.id } });
+      teacherId = linkedTeacher?.id || null;
+    }
+
+    res.json({ ...user.toJSON(), student_id: studentId, teacher_id: teacherId });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
   }

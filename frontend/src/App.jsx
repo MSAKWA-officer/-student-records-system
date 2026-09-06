@@ -24,10 +24,12 @@ import ClassSubjectView from './features/classSubjects/ClassSubjectView';
 import AcademicYearList from './features/academicYears/AcademicYearList';
 import TermList from './features/terms/TermList';
 import ExamList from './features/exams/ExamList';
-import ResultList from './features/results/ResultList';
 import ClassResultsPage from './features/results/ClassResultsPage';
-import UploadResultsPage from './features/results/UploadResultsPage';
 import ClassResultSlipsPage from './features/results/ClassResultSlipsPage';
+import OLevelResultList from './features/results/oLevel/ResultList';
+import OLevelResultCreate from './features/results/oLevel/ResultCreate';
+import OLevelResultUpdate from './features/results/oLevel/ResultUpdate';
+import OLevelResultView from './features/results/oLevel/ResultView';
 import AttendanceList from './features/attendance/AttendanceList';
 import EnrollmentList from './features/enrollments/EnrollmentList';
 import EnrollmentCreate from './features/enrollments/EnrollmentCreate';
@@ -195,20 +197,36 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="results" element={<Navigate to="/dashboard/results/view" replace />} />
+            <Route path="results" element={<Navigate to="/dashboard/results/o-level" replace />} />
             <Route
-              path="results/view"
+              path="results/o-level"
               element={
                 <ProtectedRoute roles={['admin', 'headteacher', 'teacher', 'staff']}>
-                  <ResultList />
+                  <OLevelResultList />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="results/upload"
+              path="results/o-level/create"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
+                  <OLevelResultCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="results/o-level/:id"
               element={
                 <ProtectedRoute roles={['admin', 'headteacher', 'teacher', 'staff']}>
-                  <UploadResultsPage />
+                  <OLevelResultView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="results/o-level/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
+                  <OLevelResultUpdate />
                 </ProtectedRoute>
               }
             />

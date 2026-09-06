@@ -243,10 +243,13 @@ export default function StudentResultSlip() {
                 </div>
               </div>
 
-              {/* Results table */}
+              {/* Results table — every subject this student is registered
+                  (enrolled) for is listed, whether or not marks have been
+                  entered yet. Subjects still awaiting marks show as
+                  "Incomplete" instead of silently disappearing. */}
               {slip.subjects.length === 0 ? (
                 <p className="mt-8 text-center text-sm text-slate-400">
-                  No results recorded for this student in this exam yet.
+                  This student has no registered subjects for this exam's academic year yet.
                 </p>
               ) : (
                 <table className="result-slip-table">
@@ -268,31 +271,37 @@ export default function StudentResultSlip() {
                         <td>{idx + 1}</td>
                         <td style={{ fontWeight: 600 }}>{s.subject_name}</td>
                         <td className="text-right">
-                          {s.marks_obtained}/{s.max_marks}
+                          {s.is_complete ? `${s.marks_obtained}/${s.max_marks}` : 'Incomplete'}
                         </td>
-                        <td>{s.grade || '—'}</td>
-                        <td>{gradeRemark(s.grade)}</td>
+                        <td>{s.is_complete ? s.grade || '—' : 'Incomplete'}</td>
+                        <td>{s.is_complete ? gradeRemark(s.grade) : 'Incomplete'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
 
-              {/* Summary */}
+              {/* Summary — Division is calculated automatically from the best
+                  7 subjects sat, and only shown once every registered
+                  subject above has a mark recorded. */}
               {slip.subjects.length > 0 && (
                 <div className="result-slip-summary">
                   <div className="result-slip-summary-box">
                     <p className="result-slip-summary-label">Subjects Sat</p>
-                    <p className="result-slip-summary-value">{slip.subjects.length}</p>
+                    <p className="result-slip-summary-value">{slip.subjects_sat ?? slip.subjects.length}</p>
                   </div>
                   <div className="result-slip-summary-box">
-                    <p className="result-slip-summary-label">Total Points</p>
+                    <p className="result-slip-summary-label">Total Points (Best 7)</p>
                     <p className="result-slip-summary-value">{slip.total_points ?? '—'}</p>
                   </div>
                   <div className="result-slip-summary-box">
                     <p className="result-slip-summary-label">Division</p>
                     <p className="result-slip-summary-value">
-                      {slip.division != null ? DIVISION_LABEL[slip.division] : '—'}
+                      {slip.is_complete
+                        ? slip.division != null
+                          ? DIVISION_LABEL[slip.division]
+                          : '—'
+                        : 'Incomplete'}
                     </p>
                   </div>
                 </div>

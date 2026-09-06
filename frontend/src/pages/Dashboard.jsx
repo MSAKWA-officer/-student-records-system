@@ -61,8 +61,12 @@ function buildNavConfig() {
         {
           label: 'Results',
           children: [
-            { to: '/dashboard/results/view', label: 'View Results' },
-            { to: '/dashboard/results/upload', label: 'Upload Results' },
+            // O-Level (Form 1-4) results live on their own page — the
+            // separate "View Results" / "Upload Results" sub-items were
+            // removed; Upload now happens via the Create button on that
+            // page itself. A-Level (Form 5-6) results get their own
+            // "A_levelResults" sub-item alongside this one.
+            { to: '/dashboard/results/o-level', label: 'O_levelResults' },
           ],
         },
         { to: '/dashboard/reports', label: 'Reports', roles: ['admin', 'headteacher'] },
