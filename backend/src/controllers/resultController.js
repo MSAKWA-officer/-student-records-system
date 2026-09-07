@@ -1,4 +1,5 @@
 const { Result, Student, Exam, Subject, Term, AcademicYear, Enrollment, EnrollmentSubject, ClassSubject } = require('../models');
+const { Op } = require('sequelize');
 
 const includeRelations = [
   { model: Student },
@@ -182,17 +183,39 @@ exports.getExamResultSlip = async (req, res) => {
   }
 };
 
-// GET /api/results?student_id=&exam_id=&subject_id=
+// GET /api/results?student_id=&exam_id=&subject_id=&school_class_id=&stream_id=
 // A teacher only ever sees results for subjects they are allocated to
 // teach — they cannot browse another teacher's subject by simply changing
 // the subject_id filter.
+//
+// school_class_id / stream_id are optional scoping filters: when a class
+// (and optionally a stream within it) is selected on the results pages,
+// only the results belonging to students enrolled in that class/stream are
+// returned — the query is never a system-wide pull once a class is chosen.
 exports.getAllResults = async (req, res) => {
   try {
-    const { student_id, exam_id, subject_id } = req.query;
+    const { student_id, exam_id, subject_id, school_class_id, stream_id } = req.query;
     const where = {};
     if (student_id) where.student_id = student_id;
     if (exam_id) where.exam_id = exam_id;
     if (subject_id) where.subject_id = subject_id;
+
+    if (school_class_id || stream_id) {
+      const enrollmentWhere = {};
+      if (school_class_id) enrollmentWhere.school_class_id = school_class_id;
+      if (stream_id) enrollmentWhere.stream_id = stream_id;
+
+      const enrollments = await Enrollment.findAll({ where: enrollmentWhere, attributes: ['student_id'] });
+      const scopedStudentIds = [...new Set(enrollments.map((e) => e.student_id))];
+
+      if (scopedStudentIds.length === 0) return res.json([]);
+
+      if (where.student_id) {
+        if (!scopedStudentIds.map(String).includes(String(where.student_id))) return res.json([]);
+      } else {
+        where.student_id = { [Op.in]: scopedStudentIds };
+      }
+    }
 
     if (req.user?.role === 'teacher') {
       const teacherId = req.user.teacher_id;

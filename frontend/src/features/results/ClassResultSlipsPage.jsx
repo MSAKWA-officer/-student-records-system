@@ -88,9 +88,12 @@ export default function ClassResultSlipsPage() {
       const studentParams = { class_id: classId, limit: 1000 };
       if (streamId) studentParams.stream_id = streamId;
 
+      const resultParams = { exam_id: examId, school_class_id: classId };
+      if (streamId) resultParams.stream_id = streamId;
+
       const [studentsRes, resultsRes] = await Promise.all([
         studentsApi.getAll(studentParams),
-        resultsApi.getAll({ exam_id: examId }),
+        resultsApi.getAll(resultParams),
       ]);
       setStudents(studentsRes.data.data || []);
 

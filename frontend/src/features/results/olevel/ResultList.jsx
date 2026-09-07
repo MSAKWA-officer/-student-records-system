@@ -35,33 +35,72 @@ export default function ResultList() {
   const [loadingGrid, setLoadingGrid] = useState(false);
   const [error, setError] = useState('');
 
-  // Load Classes (O-Level only), Subjects (a teacher only sees subjects
-  // they're actually allocated to teach) and Exams.
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+
+  // Load Classes (O-Level only) and Exams once.
   useEffect(() => {
     (async () => {
       try {
         const [classesRes, examsRes] = await Promise.all([classesApi.getAll(), examsApi.getAll()]);
         setClasses(filterOLevelClasses(classesRes.data));
         setExams(examsRes.data);
-
-        if (isTeacher) {
-          const csRes = await classSubjectsApi.getAll({ teacher_id: user.teacher_id });
-          const uniqueSubjects = Array.from(
-            new Map(csRes.data.map((cs) => [cs.subject_id, cs.Subject])).values()
-          ).filter(Boolean);
-          setSubjects(uniqueSubjects.sort((a, b) => a.name.localeCompare(b.name)));
-        } else {
-          const subjectsRes = await subjectsApi.getAll();
-          setSubjects(subjectsRes.data);
-        }
       } catch (err) {
-        setError('Failed to load base data (classes/subjects/exams).');
+        setError('Failed to load base data (classes/exams).');
       } finally {
         setLoadingLookups(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Subjects shown in the dropdown always reflect what's actually allocated
+  // in the system for the current selection:
+  //  - No class chosen yet -> every subject a teacher teaches (or, for
+  //    admin/headteacher, the full subject catalogue) so browsing can start
+  //    from any subject.
+  //  - A class is chosen -> only the subjects allocated to THAT class.
+  //  - A stream is also chosen -> only subjects allocated to that stream,
+  //    plus any allocation that covers the whole class (stream_id = null).
+  // If the previously selected subject no longer belongs to the new list,
+  // it's cleared so the results grid never shows a stale subject.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingSubjects(true);
+      try {
+        let list;
+        if (classId) {
+          const params = { school_class_id: classId };
+          if (isTeacher) params.teacher_id = user.teacher_id;
+          const csRes = await classSubjectsApi.getAll(params);
+          const relevant = streamId
+            ? csRes.data.filter((cs) => cs.stream_id === null || String(cs.stream_id) === String(streamId))
+            : csRes.data;
+          list = Array.from(new Map(relevant.map((cs) => [cs.subject_id, cs.Subject])).values()).filter(Boolean);
+        } else if (isTeacher) {
+          const csRes = await classSubjectsApi.getAll({ teacher_id: user.teacher_id });
+          list = Array.from(new Map(csRes.data.map((cs) => [cs.subject_id, cs.Subject])).values()).filter(Boolean);
+        } else {
+          const subjectsRes = await subjectsApi.getAll();
+          list = subjectsRes.data;
+        }
+        if (cancelled) return;
+        list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+        setSubjects(list);
+        if (subjectId && !list.some((s) => String(s.id) === String(subjectId))) {
+          setSubjectId('');
+        }
+      } catch (err) {
+        if (!cancelled) setError('Failed to load subjects for this selection.');
+      } finally {
+        if (!cancelled) setLoadingSubjects(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId, streamId, isTeacher]);
 
   const streamsForSelectedClass = useMemo(() => {
     const cls = classes.find((c) => String(c.id) === String(classId));
@@ -94,9 +133,13 @@ export default function ResultList() {
       if (subjectId) studentParams.subject_id = subjectId;
       if (selectedExam?.Term?.academic_year_id) studentParams.academic_year_id = selectedExam.Term.academic_year_id;
 
+      const resultParams = { exam_id: examId, subject_id: subjectId };
+      if (classId) resultParams.school_class_id = classId;
+      if (streamId) resultParams.stream_id = streamId;
+
       const [studentsRes, resultsRes] = await Promise.all([
         studentsApi.getAll(studentParams),
-        resultsApi.getAll({ exam_id: examId, subject_id: subjectId }),
+        resultsApi.getAll(resultParams),
       ]);
 
       setStudents(studentsRes.data.data || []);
@@ -216,7 +259,7 @@ export default function ResultList() {
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              disabled={loadingLookups}
+              disabled={loadingLookups || loadingSubjects}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             >
               <option value="">-- Select Subject --</option>
@@ -224,6 +267,16 @@ export default function ResultList() {
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>
+            {loadingSubjects ? (
+              <p className="mt-1 text-xs text-black">Loading subjects...</p>
+            ) : classId ? (
+              <p className="mt-1 text-xs text-black">
+                Only subjects allocated to {classes.find((c) => String(c.id) === String(classId))?.name || 'this class'}
+                {streamId ? ' and this stream' : ''} are shown.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-black">Select a class to narrow this list to its own subjects.</p>
+            )}
             {isTeacher && (
               <p className="mt-1 text-xs text-black">Only subjects allocated to you are shown.</p>
             )}
