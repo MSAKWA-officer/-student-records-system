@@ -26,6 +26,8 @@ import ClassSubjectView from './features/classSubjects/ClassSubjectView';
 import AcademicYearList from './features/academicYears/AcademicYearList';
 import TermList from './features/terms/TermList';
 import ExamList from './features/exams/ExamList';
+import ExamCreate from './features/exams/ExamCreate';
+import ExamUpdate from './features/exams/ExamUpdate';
 import ClassResultsPage from './features/results/ClassResultsPage';
 import ClassResultSlipsPage from './features/results/ClassResultSlipsPage';
 import OLevelResultList from './features/results/olevel/ResultList';
@@ -212,6 +214,22 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher', 'teacher', 'staff']}>
                   <ExamList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="exams/add"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
+                  <ExamCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="exams/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher']}>
+                  <ExamUpdate />
                 </ProtectedRoute>
               }
             />

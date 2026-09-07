@@ -14,7 +14,7 @@ exports.getAllExams = async (req, res) => {
       include: includeRelations,
       order: [
         [Term, 'start_date', 'DESC'],
-        ['exam_date', 'ASC'],
+        ['start_date', 'ASC'],
       ],
     });
     res.json(exams);
@@ -35,13 +35,18 @@ exports.getExamById = async (req, res) => {
 };
 
 // POST /api/exams
-// Body: { name, term_id, exam_date, max_marks, weight_percent }
+// Body: { name, term_id, start_date, end_date, weight_percent }
+// max_marks is NOT accepted here — every subject is always marked out of
+// 100 (see the Exam model), so it is not a per-exam choice.
 exports.createExam = async (req, res) => {
   try {
-    const { name, term_id, exam_date, max_marks, weight_percent } = req.body;
+    const { name, term_id, start_date, end_date, weight_percent } = req.body;
 
     if (!name || !term_id) {
       return res.status(400).json({ message: 'Exam name and term are required.' });
+    }
+    if (start_date && end_date && end_date < start_date) {
+      return res.status(400).json({ message: 'End date cannot be before the start date.' });
     }
 
     const term = await Term.findByPk(term_id);
@@ -50,8 +55,9 @@ exports.createExam = async (req, res) => {
     const exam = await Exam.create({
       name,
       term_id,
-      exam_date: exam_date || null,
-      max_marks: max_marks || 100,
+      start_date: start_date || null,
+      end_date: end_date || start_date || null,
+      max_marks: 100,
       weight_percent: weight_percent ?? 100,
     });
 
@@ -63,6 +69,8 @@ exports.createExam = async (req, res) => {
 };
 
 // PUT /api/exams/:id
+// max_marks is deliberately stripped from the update body for the same
+// reason as above — it always stays 100 per subject.
 exports.updateExam = async (req, res) => {
   try {
     const exam = await Exam.findByPk(req.params.id);
@@ -73,7 +81,14 @@ exports.updateExam = async (req, res) => {
       if (!term) return res.status(404).json({ message: 'Term not found.' });
     }
 
-    await exam.update(req.body);
+    const { name, term_id, start_date, end_date, weight_percent } = req.body;
+    const nextStart = start_date !== undefined ? start_date : exam.start_date;
+    const nextEnd = end_date !== undefined ? end_date : exam.end_date;
+    if (nextStart && nextEnd && nextEnd < nextStart) {
+      return res.status(400).json({ message: 'End date cannot be before the start date.' });
+    }
+
+    await exam.update({ name, term_id, start_date, end_date, weight_percent });
     const updated = await Exam.findByPk(exam.id, { include: includeRelations });
     res.json(updated);
   } catch (err) {
