@@ -18,6 +18,7 @@ const Attendance = require('./Attendance');
 const Announcement = require('./Announcement');
 const ClassGateway = require('./ClassGateway');
 const SmsLog = require('./SmsLog');
+const PasswordReset = require('./PasswordReset');
 
 // --- Associations ---
 
@@ -69,6 +70,10 @@ Announcement.belongsTo(User, { foreignKey: 'posted_by' });
 // Student <-> User (optional login link, for the 'student' role)
 User.hasOne(Student, { foreignKey: 'user_id' });
 Student.belongsTo(User, { foreignKey: 'user_id' });
+
+// User -> PasswordReset (one-time forgot-password tokens)
+User.hasMany(PasswordReset, { foreignKey: 'user_id' });
+PasswordReset.belongsTo(User, { foreignKey: 'user_id' });
 
 // Teacher -> Stream (class teacher of)
 Teacher.belongsTo(Stream, { foreignKey: 'is_class_teacher_of', as: 'homeroomStream' });
@@ -142,4 +147,5 @@ module.exports = {
   Announcement,
   ClassGateway,
   SmsLog,
+  PasswordReset,
 };
