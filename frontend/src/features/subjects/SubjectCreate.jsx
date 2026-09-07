@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { subjectsApi } from './Subjectsapi';
 import { classSubjectsApi } from '../classSubjects/classSubjectsApi';
+import SubjectPickerSelect from './SubjectPickerSelect';
 
 const emptyForm = { name: '', code: '', education_level: 'both' };
 
@@ -18,9 +19,43 @@ export default function SubjectCreate() {
     ...emptyForm,
     education_level: educationLevel || 'both',
   });
+  const [allSubjects, setAllSubjects] = useState([]);
+  const [selectedExistingId, setSelectedExistingId] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Load the whole-school subject catalogue once, so the search-select box
+  // below can offer existing subjects instead of the admin having to
+  // remember exact spelling/casing of one that already exists.
+  useEffect(() => {
+    subjectsApi
+      .getAll()
+      .then((res) => setAllSubjects(res.data || []))
+      .catch(() => {
+        /* Non-critical: the box still lets you type a brand-new subject. */
+      });
+  }, []);
+
+  function handleNameQueryChange(value) {
+    setForm((f) => ({ ...f, name: value }));
+    // Free typing invalidates a previous pick unless it still matches it.
+    setSelectedExistingId((prevId) => {
+      const stillMatches = allSubjects.find(
+        (s) => String(s.id) === String(prevId) && s.name === value
+      );
+      return stillMatches ? prevId : '';
+    });
+  }
+
+  function handleExistingSubjectPick(subject) {
+    setSelectedExistingId(String(subject.id));
+    setForm({
+      name: subject.name,
+      code: subject.code || '',
+      education_level: subject.education_level || 'both',
+    });
+  }
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,15 +73,21 @@ export default function SubjectCreate() {
 
     setSaving(true);
     try {
-      // Reuse an existing subject with the same name if one exists (e.g. the
-      // same "Mathematics" being added to a second class), instead of
-      // creating duplicate subject records.
-      const existingRes = await subjectsApi.getAll({ search: form.name.trim() });
-      const existing = (existingRes.data || []).find(
-        (s) => s.name.trim().toLowerCase() === form.name.trim().toLowerCase()
-      );
+      // If the admin picked an existing subject from the search-select box,
+      // reuse it directly. Otherwise fall back to matching by exact name
+      // (e.g. the same "Mathematics" being added to a second class without
+      // having used the picker), and only create a brand-new subject record
+      // if neither route finds one — this avoids duplicate subject rows.
+      let subjectId = selectedExistingId || undefined;
 
-      let subjectId = existing?.id;
+      if (!subjectId) {
+        const existingRes = await subjectsApi.getAll({ search: form.name.trim() });
+        const existing = (existingRes.data || []).find(
+          (s) => s.name.trim().toLowerCase() === form.name.trim().toLowerCase()
+        );
+        subjectId = existing?.id;
+      }
+
       if (!subjectId) {
         const created = await subjectsApi.create({
           name: form.name.trim(),
@@ -102,14 +143,16 @@ export default function SubjectCreate() {
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-black">Subject Name *</label>
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="e.g. Mathematics"
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              <SubjectPickerSelect
+                subjects={allSubjects}
+                value={selectedExistingId}
+                query={form.name}
+                onQueryChange={handleNameQueryChange}
+                onSelect={handleExistingSubjectPick}
               />
+              <p className="mt-1 text-xs text-black">
+                Search and pick an existing subject to register it here, or type a new name to create one.
+              </p>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-black">Code</label>

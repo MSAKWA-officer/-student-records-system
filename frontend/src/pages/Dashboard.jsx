@@ -37,7 +37,23 @@ function buildNavConfig() {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { to: '/dashboard/students', label: 'Students', icon: Users },
     { to: '/dashboard/classes', label: 'Classes', icon: Layers, roles: ['admin', 'headteacher', 'staff'] },
-    { to: '/dashboard/subjects', label: 'Subjects', icon: BookOpen, roles: ['admin', 'headteacher', 'staff'] },
+    {
+      label: 'Subjects',
+      icon: BookOpen,
+      roles: ['admin', 'headteacher', 'staff'],
+      children: [
+        {
+          to: '/dashboard/school-subjects',
+          label: 'School Subjects',
+          roles: ['admin', 'headteacher', 'staff'],
+        },
+        {
+          to: '/dashboard/subjects',
+          label: 'Class Subjects',
+          roles: ['admin', 'headteacher', 'staff'],
+        },
+      ],
+    },
     { to: '/dashboard/teachers', label: 'Teachers', icon: UserSquare2, roles: ['admin', 'headteacher', 'teacher'] },
     {
       to: '/dashboard/class-subjects',

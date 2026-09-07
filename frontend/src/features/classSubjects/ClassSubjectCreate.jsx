@@ -6,6 +6,7 @@ import { subjectsApi } from '../subjects/Subjectsapi';
 import { teachersApi } from '../teachers/teachersApi';
 import { academicYearsApi } from '../academicYears/academicYearsApi';
 import TeacherSearchSelect from './TeacherSearchSelect';
+import SubjectSearchSelect from './SubjectSearchSelect';
 
 const emptyForm = { school_class_id: '', subject_id: '', teacher_id: '', academic_year_id: '', stream_ids: [] };
 
@@ -47,12 +48,27 @@ export default function ClassSubjectCreate() {
   }, []);
 
   const selectedTeacher = teachers.find((t) => String(t.id) === String(form.teacher_id));
+  const selectedClass = classes.find((c) => String(c.id) === String(form.school_class_id));
+
+  // A subject only makes sense for a class if it's registered for that
+  // class's education level (primary/secondary) or marked "both".
+  function subjectMatchesClass(subject, schoolClass) {
+    if (!schoolClass) return true;
+    return subject.education_level === 'both' || subject.education_level === schoolClass.education_level;
+  }
 
   // Once a Teacher is picked, only the subjects they're registered to teach
   // (their Subjects of Expertise) are offered — this is what keeps a
   // teacher from being allocated a subject they aren't qualified for.
   // With no Teacher chosen yet, the full subject list is shown instead.
-  const subjectOptions = selectedTeacher ? selectedTeacher.subjectsExpertise || [] : allSubjects;
+  // Either way, once a Class is also picked, the list is narrowed further
+  // to subjects that actually belong to that class's education level —
+  // e.g. a Form Three (secondary) class never offers a primary-only
+  // subject, and vice versa — so the dropdown only ever shows subjects
+  // that are actually relevant, not the whole subject catalogue.
+  const subjectOptions = (selectedTeacher ? selectedTeacher.subjectsExpertise || [] : allSubjects).filter((s) =>
+    subjectMatchesClass(s, selectedClass)
+  );
 
   function streamsForClass(classId) {
     const cls = classes.find((c) => String(c.id) === String(classId));
@@ -62,7 +78,14 @@ export default function ClassSubjectCreate() {
   function handleFormChange(e) {
     const { name, value } = e.target;
     if (name === 'school_class_id') {
-      setForm((f) => ({ ...f, school_class_id: value, stream_ids: [] }));
+      setForm((f) => {
+        const newClass = classes.find((c) => String(c.id) === String(value));
+        const newOptions = (selectedTeacher ? selectedTeacher.subjectsExpertise || [] : allSubjects).filter((s) =>
+          subjectMatchesClass(s, newClass)
+        );
+        const stillValid = newOptions.some((s) => String(s.id) === String(f.subject_id));
+        return { ...f, school_class_id: value, stream_ids: [], subject_id: stillValid ? f.subject_id : '' };
+      });
       return;
     }
     setForm((f) => ({ ...f, [name]: value }));
@@ -71,12 +94,19 @@ export default function ClassSubjectCreate() {
   function handleTeacherChange(teacherId) {
     setForm((f) => {
       const newTeacher = teachers.find((t) => String(t.id) === String(teacherId));
-      const newSubjectOptions = newTeacher ? newTeacher.subjectsExpertise || [] : allSubjects;
+      const newSubjectOptions = (newTeacher ? newTeacher.subjectsExpertise || [] : allSubjects).filter((s) =>
+        subjectMatchesClass(s, selectedClass)
+      );
       // If the subject currently picked isn't taught by the newly chosen
-      // teacher, clear it so an invalid combination can't be submitted.
+      // teacher (or doesn't fit the selected class's level), clear it so an
+      // invalid combination can't be submitted.
       const stillValid = newSubjectOptions.some((s) => String(s.id) === String(f.subject_id));
       return { ...f, teacher_id: teacherId, subject_id: stillValid ? f.subject_id : '' };
     });
+  }
+
+  function handleSubjectChange(subjectId) {
+    setForm((f) => ({ ...f, subject_id: subjectId }));
   }
 
   function toggleFormStream(streamId) {
@@ -154,27 +184,32 @@ export default function ClassSubjectCreate() {
 
             <div>
               <label className="mb-1 block text-sm font-medium text-black">Subject *</label>
-              <select
-                name="subject_id"
+              <SubjectSearchSelect
+                subjects={subjectOptions}
                 value={form.subject_id}
-                onChange={handleFormChange}
-                required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">-- Select Subject --</option>
-                {subjectOptions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+                onChange={handleSubjectChange}
+              />
               {selectedTeacher && subjectOptions.length === 0 && (
                 <p className="mt-1 text-xs text-red-600">
-                  {selectedTeacher.full_name} has no Subjects of Expertise registered yet — update their
-                  profile first, or leave the Teacher field blank.
+                  {selectedClass
+                    ? `${selectedTeacher.full_name} has no ${selectedClass.education_level} Subjects of Expertise registered yet — update their profile first, or leave the Teacher field blank.`
+                    : `${selectedTeacher.full_name} has no Subjects of Expertise registered yet — update their profile first, or leave the Teacher field blank.`}
+                </p>
+              )}
+              {!selectedTeacher && selectedClass && subjectOptions.length === 0 && (
+                <p className="mt-1 text-xs text-red-600">
+                  No {selectedClass.education_level} subjects exist yet — add one on the Subjects page first.
                 </p>
               )}
               {selectedTeacher && subjectOptions.length > 0 && (
                 <p className="mt-1 text-xs text-black">
-                  Showing only subjects {selectedTeacher.full_name} is registered to teach.
+                  Showing only subjects {selectedTeacher.full_name} is registered to teach
+                  {selectedClass ? ` that also fit ${selectedClass.name} (${selectedClass.education_level})` : ''}.
+                </p>
+              )}
+              {!selectedTeacher && selectedClass && subjectOptions.length > 0 && (
+                <p className="mt-1 text-xs text-black">
+                  Showing only {selectedClass.education_level} subjects — the ones that fit {selectedClass.name}.
                 </p>
               )}
             </div>
