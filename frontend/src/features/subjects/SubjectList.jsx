@@ -1,31 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { subjectsApi } from './Subjectsapi';
 import { classesApi } from '../classes/classesApi';
 import { classSubjectsApi } from '../classSubjects/classSubjectsApi';
 import { academicYearsApi } from '../academicYears/academicYearsApi';
 import { useAuth } from '../../context/AuthContext';
 
-const emptySubjectForm = { name: '', code: '', education_level: 'both' };
-
 export default function SubjectList() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // admin/headteacher may add & assign subjects; only admin may remove one
+  // from a class (this mirrors authorize('admin','headteacher') vs
+  // authorize('admin') on the backend routes).
   const canEdit = ['admin', 'headteacher'].includes(user?.role);
+  const canRemove = user?.role === 'admin';
 
   const [classes, setClasses] = useState([]);
   const [years, setYears] = useState([]);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [error, setError] = useState('');
 
-  const [classId, setClassId] = useState('');
+  // Keep the selected class in the URL (?classId=) so a redirect back from
+  // "Add Subject" or "Edit" lands on the same class instead of resetting.
+  const classId = searchParams.get('classId') || '';
+  const [yearId, setYearId] = useState('');
   const [search, setSearch] = useState('');
 
   const [assignments, setAssignments] = useState([]); // ClassSubject rows for the selected class/year
   const [loadingAssignments, setLoadingAssignments] = useState(false);
-
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptySubjectForm);
-  const [formError, setFormError] = useState('');
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -33,6 +37,13 @@ export default function SubjectList() {
         const [classesRes, yearsRes] = await Promise.all([classesApi.getAll(), academicYearsApi.getAll()]);
         setClasses(classesRes.data);
         setYears(yearsRes.data);
+
+        // Default to the year marked "current". If none is marked current
+        // (a common setup gap), fall back to the most recent year instead
+        // of leaving nothing selected — that was the reason "+ Add Subject"
+        // used to look broken: it was silently disabled with no explanation.
+        const current = yearsRes.data.find((y) => y.is_current);
+        setYearId(String((current || yearsRes.data[0])?.id || ''));
       } catch (err) {
         setError('Failed to load classes.');
       } finally {
@@ -41,17 +52,17 @@ export default function SubjectList() {
     })();
   }, []);
 
-  const currentYear = useMemo(() => years.find((y) => y.is_current), [years]);
   const selectedClass = classes.find((c) => String(c.id) === String(classId));
+  const selectedYear = years.find((y) => String(y.id) === String(yearId));
 
   useEffect(() => {
-    if (!classId || !currentYear) {
+    if (!classId || !yearId) {
       setAssignments([]);
       return;
     }
     fetchAssignments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId, currentYear]);
+  }, [classId, yearId]);
 
   async function fetchAssignments() {
     setLoadingAssignments(true);
@@ -59,7 +70,7 @@ export default function SubjectList() {
     try {
       const res = await classSubjectsApi.getAll({
         school_class_id: classId,
-        academic_year_id: currentYear.id,
+        academic_year_id: yearId,
       });
       setAssignments(res.data);
     } catch (err) {
@@ -81,7 +92,6 @@ export default function SubjectList() {
       }
     });
     return Array.from(bySubject.values());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignments]);
 
   const filteredSubjects = useMemo(() => {
@@ -94,67 +104,19 @@ export default function SubjectList() {
   }, [subjectsForClass, search]);
 
   function selectClass(id) {
-    setClassId(String(id));
+    setSearchParams(id ? { classId: id } : {});
     setSearch('');
-    setShowForm(false);
   }
 
-  function handleFormChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  function openAddForm() {
-    setForm({
-      ...emptySubjectForm,
-      education_level: selectedClass?.education_level || 'both',
+  function goToAdd() {
+    navigate('/dashboard/subjects/add', {
+      state: {
+        classId,
+        className: selectedClass?.name,
+        academicYearId: yearId,
+        educationLevel: selectedClass?.education_level,
+      },
     });
-    setFormError('');
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setFormError('');
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setFormError('');
-
-    if (!currentYear) {
-      setFormError('No current academic year is set up yet.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      // Reuse an existing subject with the same name if one exists, otherwise create it.
-      const existingRes = await subjectsApi.getAll({ search: form.name.trim() });
-      const existing = (existingRes.data || []).find(
-        (s) => s.name.trim().toLowerCase() === form.name.trim().toLowerCase()
-      );
-
-      let subjectId;
-      if (existing) {
-        subjectId = existing.id;
-      } else {
-        const created = await subjectsApi.create(form);
-        subjectId = created.data.id;
-      }
-
-      await classSubjectsApi.create({
-        school_class_id: classId,
-        subject_id: subjectId,
-        academic_year_id: currentYear.id,
-      });
-
-      closeForm();
-      fetchAssignments();
-    } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to register subject for this class.');
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function handleRemove(entry) {
@@ -171,22 +133,48 @@ export default function SubjectList() {
 
   return (
     <div className="p-4">
-      {/* Everything for this page — header, class picker, add-subject form,
-          and the table — lives inside one card instead of separate boxes. */}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Header */}
-        <div className="border-b border-slate-100 px-6 py-5">
-          <h2 className="text-xl font-semibold text-black">Subjects by Class</h2>
-          <p className="mt-1 text-sm text-black">
-            Select a class below to register subjects for it and see its subject list.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">Subjects by Class</h2>
+            <p className="mt-1 text-sm text-black">
+              Select a class below to register subjects for it and see its subject list.
+            </p>
+          </div>
+
+          {/* Academic year picker — always visible and always has a value as
+              long as at least one year exists, so the "Add Subject" button
+              is never stuck disabled just because nobody flagged a year as
+              "current" yet. */}
+          {years.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-black">Academic Year</label>
+              <select
+                value={yearId}
+                onChange={(e) => setYearId(e.target.value)}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                {years.map((y) => (
+                  <option key={y.id} value={y.id}>
+                    {y.year_name}
+                    {y.is_current ? ' (current)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {loadingClasses && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading classes...</p>}
-        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">{error}</p>}
-        {!loadingClasses && !currentYear && (
+        {error && <p className="border-b border-slate-100 px-6 py-4 text-sm text-red-600">{error}</p>}
+        {!loadingClasses && years.length === 0 && (
           <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">
-            No current academic year is set up yet — please add one before registering subjects.
+            No academic year is set up yet —{' '}
+            <Link to="/dashboard/academic-years" className="text-blue-600 hover:underline">
+              add one first
+            </Link>{' '}
+            before registering subjects.
           </p>
         )}
 
@@ -227,70 +215,16 @@ export default function SubjectList() {
                 />
                 {canEdit && (
                   <button
-                    onClick={showForm ? closeForm : openAddForm}
-                    disabled={!currentYear}
+                    onClick={goToAdd}
+                    disabled={!yearId}
+                    title={!yearId ? 'Add an academic year first' : undefined}
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
                   >
-                    {showForm ? 'Close' : `+ Add Subject to ${selectedClass?.name}`}
+                    + Add Subject to {selectedClass?.name}
                   </button>
                 )}
               </div>
             </div>
-
-            {/* Add subject form */}
-            {canEdit && showForm && (
-              <form onSubmit={handleSubmit} className="border-b border-slate-100 px-6 py-5">
-                <h4 className="mb-4 text-sm font-semibold text-black">
-                  New Subject — {selectedClass?.name}
-                </h4>
-                {formError && (
-                  <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-black">{formError}</div>
-                )}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-black">Subject Name *</label>
-                    <input
-                      name="name"
-                      value={form.name}
-                      onChange={handleFormChange}
-                      placeholder="e.g. Mathematics"
-                      required
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-black">Code</label>
-                    <input
-                      name="code"
-                      value={form.code}
-                      onChange={handleFormChange}
-                      placeholder="e.g. MATH"
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-black">Education Level *</label>
-                    <select
-                      name="education_level"
-                      value={form.education_level}
-                      onChange={handleFormChange}
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    >
-                      <option value="primary">Primary</option>
-                      <option value="secondary">Secondary</option>
-                      <option value="both">Both</option>
-                    </select>
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="mt-5 rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-60"
-                >
-                  {saving ? 'Saving...' : `Save Subject to ${selectedClass?.name}`}
-                </button>
-              </form>
-            )}
 
             {loadingAssignments && (
               <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading subjects...</p>
@@ -301,42 +235,56 @@ export default function SubjectList() {
               <>
                 <div className="border-b border-slate-100 bg-slate-50 px-6 py-2 text-xs text-black">
                   {filteredSubjects.length} subjects
+                  {selectedYear ? ` · ${selectedYear.year_name}` : ''}
                 </div>
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
-                    <tr>
-                      <th className="px-6 py-3 font-medium">Name</th>
-                      <th className="px-6 py-3 font-medium">Code</th>
-                      <th className="px-6 py-3 font-medium">Education Level</th>
-                      {canEdit && <th className="px-6 py-3 font-medium">Actions</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredSubjects.map((entry) => (
-                      <tr key={entry.subject.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-3 font-medium text-black">{entry.subject.name}</td>
-                        <td className="px-6 py-3 text-black">{entry.subject.code || '—'}</td>
-                        <td className="px-6 py-3 text-black">
-                          {levelLabels[entry.subject.education_level] || entry.subject.education_level}
-                        </td>
-                        {canEdit && (
-                          <td className="px-6 py-3">
-                            <button onClick={() => handleRemove(entry)} className="text-red-600 hover:underline">
-                              Remove from {selectedClass?.name}
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                    {filteredSubjects.length === 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[600px] text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-black">
                       <tr>
-                        <td colSpan={canEdit ? 4 : 3} className="px-6 py-10 text-center text-black">
-                          No subjects registered for this class yet.
-                        </td>
+                        <th className="px-6 py-3 font-medium">Name</th>
+                        <th className="px-6 py-3 font-medium">Code</th>
+                        <th className="px-6 py-3 font-medium">Education Level</th>
+                        {(canEdit || canRemove) && <th className="px-6 py-3 font-medium">Actions</th>}
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredSubjects.map((entry) => (
+                        <tr key={entry.subject.id} className="hover:bg-slate-50">
+                          <td className="px-6 py-3 font-medium text-black">{entry.subject.name}</td>
+                          <td className="px-6 py-3 text-black">{entry.subject.code || '—'}</td>
+                          <td className="px-6 py-3 text-black">
+                            {levelLabels[entry.subject.education_level] || entry.subject.education_level}
+                          </td>
+                          {(canEdit || canRemove) && (
+                            <td className="whitespace-nowrap px-6 py-3">
+                              {canEdit && (
+                                <Link
+                                  to={`/dashboard/subjects/${entry.subject.id}/edit?classId=${classId}`}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  Edit
+                                </Link>
+                              )}
+                              {canEdit && canRemove && <span className="mx-2 text-slate-300">|</span>}
+                              {canRemove && (
+                                <button onClick={() => handleRemove(entry)} className="text-red-600 hover:underline">
+                                  Remove
+                                </button>
+                              )}
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                      {filteredSubjects.length === 0 && (
+                        <tr>
+                          <td colSpan={(canEdit || canRemove) ? 4 : 3} className="px-6 py-10 text-center text-black">
+                            No subjects registered for this class yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </>
             )}
           </>

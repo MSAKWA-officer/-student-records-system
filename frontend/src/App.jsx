@@ -13,6 +13,8 @@ import StudentResultSlip from './features/results/StudentResultSlip';
 import ResultSlipsPage from './features/results/ResultSlipsPage';
 import ClassList from './features/classes/ClassList';
 import SubjectList from './features/subjects/SubjectList';
+import SubjectCreate from './features/subjects/SubjectCreate';
+import SubjectUpdate from './features/subjects/SubjectUpdate';
 import TeacherList from './features/teachers/TeacherList';
 import TeacherCreate from './features/teachers/TeacherCreate';
 import TeacherUpdate from './features/teachers/TeacherUpdate';
@@ -106,6 +108,22 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher', 'staff']}>
                   <SubjectList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="subjects/add"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <SubjectCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="subjects/:id/edit"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <SubjectUpdate />
                 </ProtectedRoute>
               }
             />

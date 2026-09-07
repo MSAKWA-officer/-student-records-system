@@ -3,8 +3,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { studentsApi } from './studentsApi';
 import { academicYearsApi } from '../academicYears/academicYearsApi';
 import { termsApi } from '../terms/termsApi';
+import { examsApi } from '../exams/examsApi';
 
-const SCHOOL_NAME = 'KATORO SECONDARY SCHOOL';
+const SCHOOL_NAME = 'UBUNGO ISLAMIC HIGH SCHOOL';
 const GRADE_POINTS = { A: 1, B: 2, C: 3, D: 4, F: 5 };
 const GRADE_REMARKS = { A: 'Excellent', B: 'Very Good', C: 'Good', D: 'Satisfactory', F: 'Fail' };
 
@@ -45,8 +46,10 @@ export default function StudentReportCard() {
   }
   const [years, setYears] = useState([]);
   const [terms, setTerms] = useState([]);
+  const [exams, setExams] = useState([]);
   const [academicYearId, setAcademicYearId] = useState('');
   const [termId, setTermId] = useState(''); // '' = whole year
+  const [examId, setExamId] = useState(''); // '' = every exam in the selected term (term average)
 
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +71,23 @@ export default function StudentReportCard() {
     setTermId('');
   }, [academicYearId]);
 
-  // Load the report whenever the year (or term) selection changes
+  // Load exams for the selected term. Exams only make sense scoped to one
+  // term (an exam belongs to exactly one term), so this list — and the
+  // ability to pick a single exam — is only available once a term (not
+  // "Whole Year") is selected.
+  useEffect(() => {
+    setExamId('');
+    if (!termId) {
+      setExams([]);
+      return;
+    }
+    examsApi.getAll({ term_id: termId }).then((res) => setExams(res.data));
+  }, [termId]);
+
+  // Load the report whenever the year/term selection changes. This still
+  // fetches the full term (or year) report from the backend; picking a
+  // specific Exam below only changes which marks are shown from that
+  // already-loaded data, it doesn't need a separate backend call.
   useEffect(() => {
     if (!academicYearId) return;
     setLoading(true);
@@ -83,24 +102,38 @@ export default function StudentReportCard() {
       .finally(() => setLoading(false));
   }, [id, academicYearId, termId]);
 
+  const selectedExam = exams.find((e) => String(e.id) === String(examId));
+
   // Every subject registered for this class, whether or not marks were
   // recorded — subjects with no marks are flagged so they can be shown as
   // "Incomplete" instead of silently disappearing from the report.
   const allSubjectRows = useMemo(() => {
     if (!report) return [];
     return report.subjects.map((s) => {
-      const complete = s.average != null;
-      const grade = complete ? computeGrade(s.average) : null;
+      let scorePct = s.average; // term/year average, from the backend
+
+      // A specific Exam is selected — show that exam's own marks for this
+      // subject instead of the term/year average.
+      if (examId) {
+        const examResult = (s.results || []).find((r) => String(r.exam_id) === String(examId));
+        scorePct =
+          examResult && examResult.max_marks
+            ? (examResult.marks_obtained / examResult.max_marks) * 100
+            : null;
+      }
+
+      const complete = scorePct != null;
+      const grade = complete ? computeGrade(scorePct) : null;
       return {
         subject_id: s.subject_id,
         subject_name: s.subject_name,
-        average: complete ? s.average : null,
+        average: complete ? scorePct : null,
         grade,
         points: grade ? GRADE_POINTS[grade] : null,
         complete,
       };
     });
-  }, [report]);
+  }, [report, examId]);
 
   // Only fully-marked subjects count toward Subjects Sat / Total Points / Division.
   const completedSubjects = useMemo(
@@ -157,6 +190,23 @@ export default function StudentReportCard() {
                 <option value="">Whole Year (All Terms)</option>
                 {terms.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Exam</label>
+              <select
+                value={examId}
+                onChange={(e) => setExamId(e.target.value)}
+                disabled={!termId}
+                title={!termId ? 'Select a term first to filter by a specific exam' : undefined}
+                className="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
+              >
+                <option value="">
+                  {termId ? 'All Exams (Term Average)' : 'Select a term first'}
+                </option>
+                {exams.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
                 ))}
               </select>
             </div>
@@ -296,7 +346,7 @@ export default function StudentReportCard() {
               <div>
                 <p className="result-slip-school-name" style={{ fontSize: '14px' }}>{SCHOOL_NAME}</p>
                 <p className="result-slip-school-meta">
-                  P.O. Box 000, Mbeya, Tanzania · Tel: +255 000 000 000 · info@school.example
+                  P.O. Box 000, Ubungo, Dar es Salaam, Tanzania · Tel: +255 000 000 000 · info@school.example
                 </p>
               </div>
             </div>
@@ -308,6 +358,7 @@ export default function StudentReportCard() {
               <h3 style={{ fontSize: '14px' }}>Student Results Report</h3>
               <p>
                 {report.school_class}{report.stream ? ` - ${report.stream}` : ''} · {report.academic_year} · {report.term}
+                {selectedExam ? ` · ${selectedExam.name}` : ''}
               </p>
             </div>
 
@@ -344,7 +395,7 @@ export default function StudentReportCard() {
                 </p>
               ) : (
                 <table className="result-slip-table">
-                  <caption>Subject Performance</caption>
+                  <caption>Subject Performance{selectedExam ? ` — ${selectedExam.name}` : ''}</caption>
                   <thead>
                     <tr>
                       <th style={{ width: '8%' }}>#</th>
