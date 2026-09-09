@@ -223,8 +223,8 @@ exports.deleteResult = async (req, res) => {
 // Government/school header details for the printed report. There's no
 // Settings table yet, so these are hardcoded here — move them into one if
 // the school's details ever need to change without a code deploy.
-const REPORT_SCHOOL_NAME = 'Lupeta Secondary School';
-const REPORT_REGION_LINE = 'MBEYA CITY, MBEYA';
+const REPORT_SCHOOL_NAME = 'Ubungo Islamic High School';
+const REPORT_REGION_LINE = 'UBUNGO, DAR ES SALAAM ';
 
 function buildClassAnalysisMeta(schoolClass, exam) {
   return {
