@@ -529,6 +529,7 @@ async function buildDivisionReport(enrollments, exam) {
       district: DIVISION_REPORT_DISTRICT,
       exam_name: exam.name,
       year_name: exam.Term?.AcademicYear?.year_name || null,
+      generated_at: new Date().toLocaleString('en-GB', { hour12: false }).replace(',', ''),
     },
     registered,
     absent,
