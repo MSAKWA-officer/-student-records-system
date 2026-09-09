@@ -4,8 +4,8 @@ import * as XLSX from 'xlsx';
 import { resultsApi } from './resultsApi';
 import { studentsApi } from '../students/studentsApi';
 import { examsApi } from '../exams/examsApi';
+import { subjectsApi } from '../subjects/Subjectsapi';
 import { classesApi } from '../classes/classesApi';
-import { classSubjectsApi } from '../classSubjects/classSubjectsApi';
 
 // Recognised column header variants in an uploaded spreadsheet, normalised to
 // lowercase letters/digits only (spaces, underscores, punctuation stripped).
@@ -47,7 +47,6 @@ export default function ClassResultsPage() {
 
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [loadingGrid, setLoadingGrid] = useState(false);
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [error, setError] = useState('');
 
   // Excel/CSV import state
@@ -61,14 +60,16 @@ export default function ClassResultsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [classRes, examsRes] = await Promise.all([
+        const [classRes, subjectsRes, examsRes] = await Promise.all([
           classesApi.getById(classId),
+          subjectsApi.getAll(),
           examsApi.getAll(),
         ]);
         setSchoolClass(classRes.data);
+        setSubjects(subjectsRes.data);
         setExams(examsRes.data);
       } catch (err) {
-        setError('Failed to load base data (class/exams).');
+        setError('Failed to load base data (class/subjects/exams).');
       } finally {
         setLoadingLookups(false);
       }
@@ -76,42 +77,6 @@ export default function ClassResultsPage() {
   }, [classId]);
 
   const streams = schoolClass?.Streams || [];
-
-  // This page is always scoped to one class (from the URL), so the subject
-  // list only ever shows subjects actually allocated to that class in the
-  // system — never the whole subject catalogue. Picking a stream narrows it
-  // further to subjects allocated to that stream (plus any allocation that
-  // covers every stream of the class). If the currently chosen subject falls
-  // out of the new list, it's cleared instead of silently staying selected.
-  useEffect(() => {
-    if (!classId) return;
-    let cancelled = false;
-    (async () => {
-      setLoadingSubjects(true);
-      try {
-        const csRes = await classSubjectsApi.getAll({ school_class_id: classId });
-        const relevant = streamId
-          ? csRes.data.filter((cs) => cs.stream_id === null || String(cs.stream_id) === String(streamId))
-          : csRes.data;
-        const list = Array.from(new Map(relevant.map((cs) => [cs.subject_id, cs.Subject])).values())
-          .filter(Boolean)
-          .sort((a, b) => a.name.localeCompare(b.name));
-        if (cancelled) return;
-        setSubjects(list);
-        if (subjectId && !list.some((s) => String(s.id) === String(subjectId))) {
-          setSubjectId('');
-        }
-      } catch (err) {
-        if (!cancelled) setError('Failed to load subjects allocated to this class.');
-      } finally {
-        if (!cancelled) setLoadingSubjects(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId, streamId]);
 
   const selectedExam = useMemo(
     () => exams.find((ex) => String(ex.id) === String(examId)),
@@ -147,12 +112,9 @@ export default function ClassResultsPage() {
       const studentParams = { class_id: classId, limit: 1000 };
       if (streamId) studentParams.stream_id = streamId;
 
-      const resultParams = { exam_id: examId, subject_id: subjectId, school_class_id: classId };
-      if (streamId) resultParams.stream_id = streamId;
-
       const [studentsRes, resultsRes] = await Promise.all([
         studentsApi.getAll(studentParams),
-        resultsApi.getAll(resultParams),
+        resultsApi.getAll({ exam_id: examId, subject_id: subjectId }),
       ]);
 
       const studentList = studentsRes.data.data || [];
@@ -367,12 +329,20 @@ export default function ClassResultsPage() {
             Record results for this class only, one subject and exam at a time — or upload them from an Excel file.
           </p>
         </div>
-        <Link
-          to="/dashboard/results/view"
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-        >
-          ← Back to all classes
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to={`/dashboard/reports/class-analysis?class_id=${classId}${examId ? `&exam_id=${examId}` : ''}`}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+          >
+            View Class Analysis
+          </Link>
+          <Link
+            to="/dashboard/results/view"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+          >
+            ← Back to all classes
+          </Link>
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-3">
@@ -395,7 +365,7 @@ export default function ClassResultsPage() {
           <select
             value={subjectId}
             onChange={(e) => setSubjectId(e.target.value)}
-            disabled={loadingLookups || loadingSubjects}
+            disabled={loadingLookups}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="">-- Select Subject --</option>
@@ -403,11 +373,6 @@ export default function ClassResultsPage() {
               <option key={sub.id} value={sub.id}>{sub.name}</option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500">
-            {loadingSubjects
-              ? 'Loading subjects...'
-              : `Only subjects allocated to ${schoolClass?.name || 'this class'}${streamId ? ' and this stream' : ''} are shown.`}
-          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Exam *</label>

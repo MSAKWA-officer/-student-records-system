@@ -4,9 +4,10 @@ const { Op } = require('sequelize');
 // GET /api/students?search=&class_id=&status=&subject_id=&academic_year_id=
 exports.getAllStudents = async (req, res) => {
   try {
-    const { search, class_id, stream_id, subject_id, academic_year_id, status, page = 1, limit = 50 } = req.query;
+    const { search, class_id, stream_id, subject_id, academic_year_id, status, is_transfer_student, page = 1, limit = 50 } = req.query;
     const where = {};
     if (status) where.status = status;
+    if (is_transfer_student !== undefined) where.is_transfer_student = is_transfer_student === 'true';
     if (search) {
       where[Op.or] = [
         { first_name: { [Op.like]: `%${search}%` } },

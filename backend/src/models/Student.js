@@ -20,6 +20,14 @@ const Student = sequelize.define('Student', {
     type: DataTypes.ENUM('active', 'transferred', 'graduated', 'dropped'),
     defaultValue: 'active',
   },
+  // Incoming transfers — a student who joined from another school, as
+  // opposed to `status: 'transferred'` above which is about a student
+  // LEAVING this school.
+  is_transfer_student: { type: DataTypes.BOOLEAN, defaultValue: false },
+  previous_school_name: { type: DataTypes.STRING },
+  previous_class_level: { type: DataTypes.STRING }, // e.g. "Form 2" at their old school
+  transfer_date: { type: DataTypes.DATEONLY },
+  transfer_certificate_no: { type: DataTypes.STRING },
 }, { tableName: 'students' });
 
 module.exports = Student;

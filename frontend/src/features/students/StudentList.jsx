@@ -260,6 +260,12 @@ export default function StudentList() {
               >
                 <UserPlus size={16} /> Add Student
               </Link>
+              <Link
+                to="/dashboard/students/add-transfer"
+                className="flex items-center gap-2 rounded-md border border-blue-600 px-3.5 py-2 text-sm font-semibold text-black transition hover:bg-blue-50"
+              >
+                <UserPlus size={16} /> Register Transferred Student
+              </Link>
             </div>
           )}
         </div>

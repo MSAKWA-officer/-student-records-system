@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { ClipboardList } from 'lucide-react';
 import { classesApi } from '../classes/classesApi';
 import { studentsApi } from '../students/studentsApi';
 import { exportToExcel } from '../../utils/exportToExcel';
@@ -10,6 +11,12 @@ import { smsApi } from '../smsGateways/smsApi';
 // reached from the Reports nav item); when a :classId is present (reached
 // via Reports > Form 1, Form 2, ... in the sidebar) that class is
 // pre-selected and locked, with a breadcrumb back to the class picker.
+//
+// NOTE: the "View Division Report" links below point to
+// /dashboard/reports/division/class/:classId and
+// /dashboard/reports/division/school — the NECTA-style class/school results
+// reports (ClassDivisionReportPage / SchoolDivisionReportPage). Those routes
+// still need to be registered in App.jsx.
 export default function ReportsList() {
   const { classId: routeClassId } = useParams();
   const location = useLocation();
@@ -139,6 +146,19 @@ export default function ReportsList() {
     }
   }
 
+  function classDivisionReportLink() {
+    const params = new URLSearchParams();
+    if (streamId) params.set('stream_id', streamId);
+    const qs = params.toString();
+    return `/dashboard/reports/division/class/${classId}${qs ? `?${qs}` : ''}`;
+  }
+
+  function classAnalysisReportLink() {
+    const params = new URLSearchParams();
+    params.set('class_id', classId);
+    return `/dashboard/reports/class-analysis?${params.toString()}`;
+  }
+
   return (
     <div className="p-4">
       {/* Everything for this page — breadcrumb, header, class picker,
@@ -155,15 +175,25 @@ export default function ReportsList() {
         )}
 
         {/* Header */}
-        <div className="border-b border-slate-100 px-6 py-5">
-          <h2 className="text-xl font-semibold text-black">
-            {routeClassId ? `${selectedClass?.name || 'Class'} Reports` : 'Reports by Class'}
-          </h2>
-          <p className="mt-1 text-sm text-black">
-            {routeClassId
-              ? `Every student in ${selectedClass?.name || 'this class'}, each with a link to their full results report.`
-              : 'Choose a class below to see all its students, each with a link to their full results report.'}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-black">
+              {routeClassId ? `${selectedClass?.name || 'Class'} Reports` : 'Reports by Class'}
+            </h2>
+            <p className="mt-1 text-sm text-black">
+              {routeClassId
+                ? `Every student in ${selectedClass?.name || 'this class'}, each with a link to their full results report.`
+                : 'Choose a class below to see all its students, each with a link to their full results report.'}
+            </p>
+          </div>
+          {!routeClassId && (
+            <Link
+              to="/dashboard/reports/division/school"
+              className="no-print flex items-center gap-2 rounded-md border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+            >
+              <ClipboardList size={15} /> View School Division Report
+            </Link>
+          )}
         </div>
 
         {loadingClasses && <p className="border-b border-slate-100 px-6 py-4 text-sm text-black">Loading classes...</p>}
@@ -203,6 +233,18 @@ export default function ReportsList() {
                   : ''}
               </h3>
               <div className="no-print flex flex-wrap gap-3">
+                <Link
+                  to={classDivisionReportLink()}
+                  className="flex items-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+                >
+                  <ClipboardList size={15} /> View Class Division Report
+                </Link>
+                <Link
+                  to={classAnalysisReportLink()}
+                  className="flex items-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+                >
+                  <ClipboardList size={15} /> View Class Analysis Report
+                </Link>
                 <button
                   onClick={handleExportExcel}
                   disabled={filteredStudents.length === 0}

@@ -86,6 +86,11 @@ function buildNavConfig() {
           ],
         },
         { to: '/dashboard/reports', label: 'Reports', roles: ['admin', 'headteacher'] },
+        {
+          to: '/dashboard/reports/division/school',
+          label: 'School Division Report',
+          roles: ['admin', 'headteacher'],
+        },
       ],
     },
     { to: '/dashboard/attendance', label: 'Attendance', icon: CalendarCheck2 },
@@ -107,8 +112,7 @@ function buildStudentNavConfig(user) {
   const sid = user?.student_id;
   return [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-    { to: `/dashboard/students/${sid}/report-card`, label: 'My Report Card', icon: ClipboardList },
-    { to: `/dashboard/students/${sid}/result-slip`, label: 'My Result Slip', icon: ListChecks },
+    { to: `/dashboard/students/${sid}/report-card`, label: 'Result Report', icon: ClipboardList },
     { to: `/dashboard/students/${sid}/attendance`, label: 'My Attendance', icon: CalendarCheck2 },
     { to: '/dashboard/announcements', label: 'Announcements', icon: Megaphone },
   ];
@@ -358,7 +362,7 @@ export default function Dashboard() {
           </main>
 
           <footer className="border-t border-slate-200 bg-white px-6 py-3 text-center text-xs text-black">
-            © 2024–{new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
+            © –{new Date().getFullYear()} Student Records System. Built for schools in Tanzania.
           </footer>
         </div>
       </div>

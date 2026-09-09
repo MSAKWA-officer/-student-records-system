@@ -346,7 +346,7 @@ export default function StudentReportCard() {
               <div>
                 <p className="result-slip-school-name" style={{ fontSize: '14px' }}>{SCHOOL_NAME}</p>
                 <p className="result-slip-school-meta">
-                  P.O. Box 000, Ubungo, Dar es Salaam, Tanzania · Tel: +255 000 000 000 · info@school.example
+                  P.O. Box 4295, Mbeya City Council, MBEYA · 
                 </p>
               </div>
             </div>

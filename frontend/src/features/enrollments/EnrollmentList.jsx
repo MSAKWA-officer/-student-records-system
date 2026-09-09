@@ -99,12 +99,20 @@ export default function EnrollmentList() {
             </h2>
             <p className="mt-1 text-sm text-black">{enrollments.length} registered</p>
           </div>
-          <Link
-            to="/dashboard/enrollments/create"
-            className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
-          >
-            <Plus size={16} /> Enroll Student
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/dashboard/enrollments/create"
+              className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+            >
+              <Plus size={16} /> Enroll Student
+            </Link>
+            <Link
+              to="/dashboard/enrollments/transferred"
+              className="flex items-center gap-2 rounded-md border border-blue-600 px-3.5 py-2 text-sm font-semibold text-black transition hover:bg-blue-50"
+            >
+              <Plus size={16} /> Enroll Transferred Student
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}

@@ -1,4 +1,14 @@
-const { Result, Student, Exam, Subject, Term, AcademicYear, Enrollment, EnrollmentSubject, ClassSubject } = require('../models');
+const {
+  Result,
+  Student,
+  Exam,
+  Subject,
+  Term,
+  AcademicYear,
+  SchoolClass,
+  Enrollment,
+  EnrollmentSubject,
+} = require('../models');
 const { Op } = require('sequelize');
 
 const includeRelations = [
@@ -6,49 +16,6 @@ const includeRelations = [
   { model: Subject },
   { model: Exam, include: [{ model: Term, include: [{ model: AcademicYear }] }] },
 ];
-
-// A teacher may only record/edit results for a subject they are actually
-// allocated to teach, for the class/stream/year the student is currently
-// enrolled in. Admin/headteacher are not restricted. Returns null if
-// allowed, or a { status, message } object describing why it's rejected.
-async function checkTeacherOwnership(req, { studentId, subjectId, examId }) {
-  if (req.user?.role !== 'teacher') return null;
-
-  const teacherId = req.user.teacher_id;
-  if (!teacherId) {
-    return { status: 403, message: 'Your account is not linked to a teacher profile.' };
-  }
-
-  const exam = await Exam.findByPk(examId, { include: [{ model: Term }] });
-  if (!exam) return { status: 404, message: 'Exam not found.' };
-  const academicYearId = exam.Term?.academic_year_id;
-
-  const enrollment = await Enrollment.findOne({
-    where: { student_id: studentId, ...(academicYearId ? { academic_year_id: academicYearId } : {}) },
-    order: [['id', 'DESC']],
-  });
-  if (!enrollment) {
-    return { status: 404, message: "This student's class enrollment could not be found for this exam's year." };
-  }
-
-  const allocation = await ClassSubject.findOne({
-    where: {
-      teacher_id: teacherId,
-      subject_id: subjectId,
-      school_class_id: enrollment.school_class_id,
-      ...(academicYearId ? { academic_year_id: academicYearId } : {}),
-    },
-  });
-  // stream_id = null on the allocation means "all streams" of that class.
-  const matchesStream =
-    allocation && (allocation.stream_id === null || allocation.stream_id === enrollment.stream_id);
-
-  if (!allocation || !matchesStream) {
-    return { status: 403, message: 'You are not assigned to teach this subject to this student.' };
-  }
-
-  return null;
-}
 
 // Simple grade based on the percentage of marks obtained
 function computeGrade(marksObtained, maxMarks) {
@@ -80,14 +47,6 @@ function computeDivision(totalPoints, subjectCount) {
 // GET /api/results/exam-slip?student_id=&exam_id=
 // Results for a single student for a single exam (e.g. First Term - Mock
 // Exam), including Subject, Marks, Grade, Remarks and Division.
-//
-// The subject list is built from the student's own registered subjects
-// (EnrollmentSubject, for the enrollment matching this exam's academic
-// year) — "kulingana na masomo aliyosajiliwa" — not just whichever
-// subjects happen to already have a result recorded. Subjects with no
-// mark yet are still listed (flagged as incomplete) instead of silently
-// disappearing, and Division is only computed automatically once every
-// registered subject has been graded, using the best 7 subjects sat.
 exports.getExamResultSlip = async (req, res) => {
   try {
     const { student_id, exam_id } = req.query;
@@ -101,63 +60,26 @@ exports.getExamResultSlip = async (req, res) => {
     const student = await Student.findByPk(student_id);
     if (!student) return res.status(404).json({ message: 'Student not found.' });
 
-    const academicYearId = exam.Term?.academic_year_id;
-
-    const enrollment = await Enrollment.findOne({
-      where: { student_id, ...(academicYearId ? { academic_year_id: academicYearId } : {}) },
-      order: [['id', 'DESC']],
-    });
-
-    const enrollmentSubjects = enrollment
-      ? await EnrollmentSubject.findAll({ where: { enrollment_id: enrollment.id }, include: [{ model: Subject }] })
-      : [];
-
     const results = await Result.findAll({
       where: { student_id, exam_id },
       include: [{ model: Subject }],
-    });
-    const resultBySubjectId = new Map(results.map((r) => [r.subject_id, r]));
-
-    // Prefer the student's registered subject list; fall back to whatever
-    // results already exist (e.g. older data with no matching enrollment)
-    // so nothing that was already recorded ever disappears from the slip.
-    const subjectEntries = enrollmentSubjects.length
-      ? enrollmentSubjects.map((es) => ({ subject_id: es.subject_id, subject_name: es.Subject?.name }))
-      : results.map((r) => ({ subject_id: r.subject_id, subject_name: r.Subject?.name }));
-
-    const bySubjectId = new Map();
-    subjectEntries.forEach((s) => {
-      if (!bySubjectId.has(s.subject_id)) bySubjectId.set(s.subject_id, s);
-    });
-    const orderedSubjects = Array.from(bySubjectId.values()).sort((a, b) =>
-      (a.subject_name || '').localeCompare(b.subject_name || '')
-    );
-
-    const subjects = orderedSubjects.map((s) => {
-      const r = resultBySubjectId.get(s.subject_id);
-      const isComplete = !!r;
-      return {
-        result_id: r?.id || null,
-        subject_id: s.subject_id,
-        subject_name: s.subject_name,
-        marks_obtained: isComplete ? r.marks_obtained : null,
-        max_marks: exam.max_marks,
-        grade: isComplete ? r.grade : null,
-        remarks: isComplete ? r.remarks : null,
-        points: isComplete && r.grade ? GRADE_POINTS[r.grade] ?? null : null,
-        is_complete: isComplete,
-      };
+      order: [[{ model: Subject }, 'name', 'ASC']],
     });
 
-    // The slip as a whole is only "complete" once every registered subject
-    // has a mark — while anything is still missing, Division stays hidden
-    // rather than showing a figure that would change once the rest of the
-    // marks are entered.
-    const allComplete = subjects.length > 0 && subjects.every((s) => s.is_complete);
+    const subjects = results.map((r) => ({
+      result_id: r.id,
+      subject_id: r.subject_id,
+      subject_name: r.Subject?.name,
+      marks_obtained: r.marks_obtained,
+      max_marks: exam.max_marks,
+      grade: r.grade,
+      remarks: r.remarks,
+      points: r.grade ? GRADE_POINTS[r.grade] ?? null : null,
+    }));
+
     const gradedSubjects = subjects.filter((s) => s.points != null);
-    const best7 = [...gradedSubjects].sort((a, b) => a.points - b.points).slice(0, 7);
-    const totalPoints = best7.reduce((sum, s) => sum + s.points, 0);
-    const division = allComplete && best7.length ? computeDivision(totalPoints, best7.length) : null;
+    const totalPoints = gradedSubjects.reduce((sum, s) => sum + s.points, 0);
+    const division = computeDivision(totalPoints, gradedSubjects.length);
 
     res.json({
       student: {
@@ -173,9 +95,7 @@ exports.getExamResultSlip = async (req, res) => {
         academic_year_name: exam.Term?.AcademicYear?.year_name,
       },
       subjects,
-      subjects_sat: gradedSubjects.length,
-      total_points: allComplete && best7.length ? totalPoints : null,
-      is_complete: allComplete,
+      total_points: gradedSubjects.length ? totalPoints : null,
       division,
     });
   } catch (err) {
@@ -183,56 +103,14 @@ exports.getExamResultSlip = async (req, res) => {
   }
 };
 
-// GET /api/results?student_id=&exam_id=&subject_id=&school_class_id=&stream_id=
-// A teacher only ever sees results for subjects they are allocated to
-// teach — they cannot browse another teacher's subject by simply changing
-// the subject_id filter.
-//
-// school_class_id / stream_id are optional scoping filters: when a class
-// (and optionally a stream within it) is selected on the results pages,
-// only the results belonging to students enrolled in that class/stream are
-// returned — the query is never a system-wide pull once a class is chosen.
+// GET /api/results?student_id=&exam_id=&subject_id=
 exports.getAllResults = async (req, res) => {
   try {
-    const { student_id, exam_id, subject_id, school_class_id, stream_id } = req.query;
+    const { student_id, exam_id, subject_id } = req.query;
     const where = {};
     if (student_id) where.student_id = student_id;
     if (exam_id) where.exam_id = exam_id;
     if (subject_id) where.subject_id = subject_id;
-
-    if (school_class_id || stream_id) {
-      const enrollmentWhere = {};
-      if (school_class_id) enrollmentWhere.school_class_id = school_class_id;
-      if (stream_id) enrollmentWhere.stream_id = stream_id;
-
-      const enrollments = await Enrollment.findAll({ where: enrollmentWhere, attributes: ['student_id'] });
-      const scopedStudentIds = [...new Set(enrollments.map((e) => e.student_id))];
-
-      if (scopedStudentIds.length === 0) return res.json([]);
-
-      if (where.student_id) {
-        if (!scopedStudentIds.map(String).includes(String(where.student_id))) return res.json([]);
-      } else {
-        where.student_id = { [Op.in]: scopedStudentIds };
-      }
-    }
-
-    if (req.user?.role === 'teacher') {
-      const teacherId = req.user.teacher_id;
-      const allocations = teacherId
-        ? await ClassSubject.findAll({ where: { teacher_id: teacherId }, attributes: ['subject_id'] })
-        : [];
-      const allowedSubjectIds = [...new Set(allocations.map((a) => a.subject_id))];
-
-      if (subject_id) {
-        if (!allowedSubjectIds.map(String).includes(String(subject_id))) {
-          return res.status(403).json({ message: 'You are not assigned to teach this subject.' });
-        }
-      } else {
-        if (allowedSubjectIds.length === 0) return res.json([]);
-        where.subject_id = allowedSubjectIds;
-      }
-    }
 
     const results = await Result.findAll({
       where,
@@ -279,9 +157,6 @@ exports.createResult = async (req, res) => {
       return res.status(400).json({ message: `Marks must be between 0 and ${exam.max_marks}.` });
     }
 
-    const ownershipError = await checkTeacherOwnership(req, { studentId: student_id, subjectId: subject_id, examId: exam_id });
-    if (ownershipError) return res.status(ownershipError.status).json({ message: ownershipError.message });
-
     const grade = computeGrade(marks_obtained, exam.max_marks);
 
     const result = await Result.create({
@@ -317,19 +192,9 @@ exports.updateResult = async (req, res) => {
       return res.status(400).json({ message: `Marks must be between 0 and ${maxMarks}.` });
     }
 
-    const ownershipError = await checkTeacherOwnership(req, {
-      studentId: result.student_id,
-      subjectId: result.subject_id,
-      examId: result.exam_id,
-    });
-    if (ownershipError) return res.status(ownershipError.status).json({ message: ownershipError.message });
-
     const grade = computeGrade(marksObtained, maxMarks);
 
-    // Only marks/remarks are editable here — student_id/subject_id/exam_id
-    // are intentionally ignored even if sent, so an update can't be used to
-    // move a result onto a student/subject the caller isn't allowed to touch.
-    await result.update({ marks_obtained: marksObtained, remarks: req.body.remarks ?? result.remarks, grade });
+    await result.update({ ...req.body, grade });
     const updated = await Result.findByPk(result.id, { include: includeRelations });
     res.json(updated);
   } catch (err) {
@@ -347,5 +212,384 @@ exports.deleteResult = async (req, res) => {
     res.json({ message: 'Result removed.' });
   } catch (err) {
     res.status(500).json({ message: 'Server error.', error: err.message });
+  }
+};
+
+// ---------------------------------------------------------------------
+// Class Analysis Report (Division Summary + Top 10 Best/Lowest + Subject
+// Performance) for one class in one exam. Powers ClassAnalysisReportPage.jsx.
+// ---------------------------------------------------------------------
+
+// Government/school header details for the printed report. There's no
+// Settings table yet, so these are hardcoded here — move them into one if
+// the school's details ever need to change without a code deploy.
+const REPORT_SCHOOL_NAME = 'Lupeta Secondary School';
+const REPORT_REGION_LINE = 'MBEYA CITY, MBEYA';
+
+function buildClassAnalysisMeta(schoolClass, exam) {
+  return {
+    school_name: REPORT_SCHOOL_NAME,
+    region_line: REPORT_REGION_LINE,
+    class_name: schoolClass.name,
+    exam_name: exam.name,
+    academic_year: exam.Term?.AcademicYear?.year_name,
+    generated_at: new Date().toLocaleString('en-GB', { hour12: false }).replace(',', ''),
+  };
+}
+
+const EMPTY_GRADE_COUNTS = { A: 0, B: 0, C: 0, D: 0, F: 0, total: 0 };
+
+// GET /api/results/class-analysis?class_id=&exam_id=
+exports.getClassAnalysisReport = async (req, res) => {
+  try {
+    const { class_id, exam_id } = req.query;
+    if (!class_id || !exam_id) {
+      return res.status(400).json({ message: 'class_id and exam_id are required.' });
+    }
+
+    const exam = await Exam.findByPk(exam_id, { include: [{ model: Term, include: [{ model: AcademicYear }] }] });
+    if (!exam) return res.status(404).json({ message: 'Exam not found.' });
+
+    const schoolClass = await SchoolClass.findByPk(class_id);
+    if (!schoolClass) return res.status(404).json({ message: 'Class not found.' });
+
+    const meta = buildClassAnalysisMeta(schoolClass, exam);
+    const academicYearId = exam.Term?.academic_year_id;
+
+    // Students enrolled in this class for the exam's academic year.
+    const enrollmentWhere = { school_class_id: class_id };
+    if (academicYearId) enrollmentWhere.academic_year_id = academicYearId;
+    const enrollments = await Enrollment.findAll({ where: enrollmentWhere, include: [{ model: Student }] });
+    const students = enrollments.map((e) => e.Student).filter(Boolean);
+    const studentIds = students.map((s) => s.id);
+
+    if (studentIds.length === 0) {
+      return res.json({ meta, divisionSummary: [], topBest: [], topLowest: [], subjectPerformance: [] });
+    }
+
+    // Every result for these students, for this exam, across all subjects.
+    const results = await Result.findAll({
+      where: { exam_id, student_id: studentIds },
+      include: [{ model: Subject }],
+    });
+
+    const resultsByStudent = new Map();
+    for (const r of results) {
+      if (!resultsByStudent.has(r.student_id)) resultsByStudent.set(r.student_id, []);
+      resultsByStudent.get(r.student_id).push(r);
+    }
+
+    // Per-student total points (best-effort: every graded subject counts)
+    // and Division, reusing the same rules as the individual result slip.
+    const studentSummaries = students
+      .map((s) => {
+        const studentResults = resultsByStudent.get(s.id) || [];
+        const gradedSubjects = studentResults.filter((r) => r.grade && GRADE_POINTS[r.grade] != null);
+        if (gradedSubjects.length === 0) return null; // no results yet — excluded from ranking/division
+        const totalPoints = gradedSubjects.reduce((sum, r) => sum + GRADE_POINTS[r.grade], 0);
+        return {
+          full_name: [s.first_name, s.middle_name, s.last_name].filter(Boolean).join(' '),
+          gender: s.gender, // 'male' | 'female'
+          total_points: totalPoints,
+          division: computeDivision(totalPoints, gradedSubjects.length),
+        };
+      })
+      .filter(Boolean);
+
+    // --- Division Performance Summary (rows: F / M / TOTAL, columns: I..IV, 0) ---
+    const blankDivisionRow = () => ({ I: 0, II: 0, III: 0, IV: 0, '0': 0 });
+    const divisionCounts = { F: blankDivisionRow(), M: blankDivisionRow(), TOTAL: blankDivisionRow() };
+    for (const s of studentSummaries) {
+      const sexKey = s.gender === 'female' ? 'F' : 'M';
+      divisionCounts[sexKey][s.division] += 1;
+      divisionCounts.TOTAL[s.division] += 1;
+    }
+    const divisionSummary = ['F', 'M', 'TOTAL'].map((sex) => ({ sex, divisions: divisionCounts[sex] }));
+
+    // --- Top 10 Best / Lowest (fewer points = better, NECTA O-Level style) ---
+    const ranked = [...studentSummaries].sort(
+      (a, b) => a.total_points - b.total_points || a.full_name.localeCompare(b.full_name)
+    );
+    const toRankedRow = (s, rank) => ({
+      rank,
+      student_name: s.full_name,
+      class_name: schoolClass.name,
+      points: s.total_points,
+      division: s.division,
+    });
+    const topBest = ranked.slice(0, 10).map((s, i) => toRankedRow(s, i + 1));
+    const topLowest = [...ranked]
+      .reverse()
+      .slice(0, 10)
+      .map((s, i) => toRankedRow(s, i + 1));
+
+    // --- Subject Performance Summary (Subject x Sex x Grade A-F) ---
+    const genderById = new Map(students.map((s) => [s.id, s.gender]));
+    const subjectMap = new Map(); // subject_id -> { subject_name, F: counts, M: counts }
+    for (const r of results) {
+      if (!r.grade) continue;
+      if (!subjectMap.has(r.subject_id)) {
+        subjectMap.set(r.subject_id, {
+          subject_name: r.Subject?.name || `Subject #${r.subject_id}`,
+          F: { ...EMPTY_GRADE_COUNTS },
+          M: { ...EMPTY_GRADE_COUNTS },
+        });
+      }
+      const sexKey = genderById.get(r.student_id) === 'female' ? 'F' : 'M';
+      const bucket = subjectMap.get(r.subject_id)[sexKey];
+      bucket[r.grade] += 1;
+      bucket.total += 1;
+    }
+
+    const subjectPerformance = Array.from(subjectMap.values())
+      .map(({ subject_name, F, M }) => {
+        const T = { ...EMPTY_GRADE_COUNTS };
+        ['A', 'B', 'C', 'D', 'F'].forEach((g) => {
+          T[g] = F[g] + M[g];
+        });
+        T.total = F.total + M.total;
+        return { subject_name, rows: [{ sex: 'F', ...F }, { sex: 'M', ...M }, { sex: 'T', ...T }] };
+      })
+      .sort((a, b) => a.subject_name.localeCompare(b.subject_name));
+
+    res.json({ meta, divisionSummary, topBest, topLowest, subjectPerformance });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to generate the class analysis report.', error: err.message });
+  }
+};
+
+// ---------------------------------------------------------------------
+// NECTA-style Class / School Division Report (Division Performance
+// Summary, per-student AGG/DIV with DETAILED SUBJECTS by subject CODE,
+// and the Examination Centre Overall/Subjects Performance summaries).
+// Powers ClassDivisionReportPage.jsx / SchoolDivisionReportPage.jsx.
+// Separate from getClassAnalysisReport above (which powers a different
+// page, ClassAnalysisReportPage.jsx) — both can coexist.
+// ---------------------------------------------------------------------
+
+const DIVISION_REPORT_REGION = 'Mbeya';
+const DIVISION_REPORT_DISTRICT = 'Mbeya City';
+
+// Competency band for a subject/centre GPA, in line with the standard NECTA
+// 1.0–5.0 GPA scale used on examination-centre performance summaries.
+function competencyLevel(gpa) {
+  if (gpa == null || Number.isNaN(gpa)) return null;
+  if (gpa <= 1.5) return 'Grade A (Excellent)';
+  if (gpa <= 2.5) return 'Grade B (Good)';
+  if (gpa <= 3.5) return 'Grade C (Average)';
+  if (gpa <= 4.5) return 'Grade D (Satisfactory)';
+  return 'Grade F (Fail)';
+}
+
+function studentFullName(student) {
+  return [student.first_name, student.middle_name, student.last_name].filter(Boolean).join(' ');
+}
+
+// Shared builder behind getClassResultsReport / getSchoolResultsReport.
+// `enrollments` must include Student (and, for the school-wide report,
+// SchoolClass) — one row per student to appear on the report.
+async function buildDivisionReport(enrollments, exam) {
+  const enrollmentIds = enrollments.map((e) => e.id);
+  const studentIds = enrollments.map((e) => e.student_id);
+
+  const enrollmentSubjects = enrollmentIds.length
+    ? await EnrollmentSubject.findAll({
+        where: { enrollment_id: { [Op.in]: enrollmentIds } },
+        include: [{ model: Subject }],
+      })
+    : [];
+  const subjectsByEnrollmentId = new Map();
+  enrollmentSubjects.forEach((es) => {
+    if (!subjectsByEnrollmentId.has(es.enrollment_id)) subjectsByEnrollmentId.set(es.enrollment_id, []);
+    subjectsByEnrollmentId.get(es.enrollment_id).push(es);
+  });
+
+  const results = studentIds.length
+    ? await Result.findAll({
+        where: { exam_id: exam.id, student_id: { [Op.in]: studentIds } },
+        include: [{ model: Subject }],
+      })
+    : [];
+  const resultsByStudentId = new Map();
+  results.forEach((r) => {
+    if (!resultsByStudentId.has(r.student_id)) resultsByStudentId.set(r.student_id, new Map());
+    resultsByStudentId.get(r.student_id).set(r.subject_id, r);
+  });
+
+  const studentRows = [];
+  const allGradedEntries = []; // flat list of { subject_id, code, name, grade, points } across every student, for GPA
+
+  for (const enrollment of enrollments) {
+    const student = enrollment.Student;
+    if (!student) continue;
+
+    const regSubjects = subjectsByEnrollmentId.get(enrollment.id) || [];
+    const resultMap = resultsByStudentId.get(student.id) || new Map();
+
+    // Prefer the student's registered subjects; fall back to whatever
+    // results already exist so a student never silently disappears just
+    // because EnrollmentSubject wasn't set up for them.
+    const subjectSource = regSubjects.length
+      ? regSubjects.map((es) => ({ subject_id: es.subject_id, subject: es.Subject }))
+      : Array.from(resultMap.values()).map((r) => ({ subject_id: r.subject_id, subject: r.Subject }));
+
+    const graded = [];
+    subjectSource.forEach((s) => {
+      const r = resultMap.get(s.subject_id);
+      if (r && r.grade && s.subject) {
+        const points = GRADE_POINTS[r.grade] ?? null;
+        const entry = { subject_id: s.subject_id, code: s.subject.code || s.subject.name, name: s.subject.name, grade: r.grade, points };
+        graded.push(entry);
+        allGradedEntries.push(entry);
+      }
+    });
+
+    const isAbsent = subjectSource.length === 0 || graded.length === 0;
+    const allComplete = subjectSource.length > 0 && graded.length === subjectSource.length;
+
+    let agg = null;
+    let div = null;
+    if (!isAbsent && allComplete) {
+      const best7 = [...graded].sort((a, b) => a.points - b.points).slice(0, 7);
+      agg = best7.reduce((sum, s) => sum + s.points, 0);
+      div = computeDivision(agg, best7.length);
+    }
+
+    studentRows.push({
+      candidate_number: student.candidate_number || student.admission_number,
+      name: studentFullName(student),
+      sex: student.gender === 'female' ? 'F' : 'M',
+      class_name: enrollment.SchoolClass?.name || null,
+      agg,
+      div,
+      subjects: graded.map((g) => ({ code: g.code, grade: g.grade })),
+      absent: isAbsent,
+    });
+  }
+
+  // Sort by name, matching the printed sheet convention.
+  studentRows.sort((a, b) => a.name.localeCompare(b.name));
+
+  // --- Division Performance Summary (by sex) ---------------------------
+  const blankTally = () => ({ I: 0, II: 0, III: 0, IV: 0, zero: 0 });
+  const tally = { F: blankTally(), M: blankTally(), T: blankTally() };
+  studentRows.forEach((s) => {
+    if (!s.div) return;
+    const key = s.div === '0' ? 'zero' : s.div;
+    tally[s.sex][key] += 1;
+    tally.T[key] += 1;
+  });
+  const divisionsBySex = [
+    { sex: 'F', ...tally.F },
+    { sex: 'M', ...tally.M },
+    { sex: 'T', ...tally.T },
+  ];
+
+  // --- Overall counts ----------------------------------------------------
+  const registered = studentRows.length;
+  const absent = studentRows.filter((s) => s.absent).length;
+  const sat = registered - absent;
+  const incomplete = studentRows.filter((s) => !s.absent && s.div == null).length;
+  const clean = sat - incomplete;
+  const withheld = 0; // not tracked yet — wire up if/when a "withheld" status exists
+  const no_ca = 0; // no continuous-assessment component tracked yet
+
+  // --- Centre GPA (average grade point across every graded subject entry) —
+  const gpa = allGradedEntries.length
+    ? allGradedEntries.reduce((sum, e) => sum + e.points, 0) / allGradedEntries.length
+    : null;
+
+  // --- Examination Centre Subjects Performance ---------------------------
+  const bySubject = new Map();
+  allGradedEntries.forEach((e) => {
+    if (!bySubject.has(e.subject_id)) bySubject.set(e.subject_id, { code: e.code, name: e.name, entries: [] });
+    bySubject.get(e.subject_id).entries.push(e);
+  });
+  const subjectsPerformance = Array.from(bySubject.values())
+    .map((s) => {
+      const subjSat = s.entries.length;
+      const subjPass = s.entries.filter((e) => e.grade !== 'F').length;
+      const subjGpa = subjSat ? s.entries.reduce((sum, e) => sum + e.points, 0) / subjSat : null;
+      return {
+        code: s.code,
+        name: s.name,
+        reg: registered, // NECTA convention: REG = whole centre register, not per-subject
+        sat: subjSat,
+        pass: subjPass,
+        gpa: subjGpa,
+        competency: competencyLevel(subjGpa),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    meta: {
+      school_name: REPORT_SCHOOL_NAME,
+      region: DIVISION_REPORT_REGION,
+      district: DIVISION_REPORT_DISTRICT,
+      exam_name: exam.name,
+      year_name: exam.Term?.AcademicYear?.year_name || null,
+    },
+    registered,
+    absent,
+    sat,
+    withheld,
+    no_ca,
+    clean,
+    incomplete,
+    divisionsBySex,
+    gpa,
+    students: studentRows,
+    subjectsPerformance,
+  };
+}
+
+// GET /api/results/class-report?exam_id=&school_class_id=&stream_id=
+exports.getClassResultsReport = async (req, res) => {
+  try {
+    const { exam_id, school_class_id, stream_id } = req.query;
+    if (!exam_id || !school_class_id) {
+      return res.status(400).json({ message: 'exam_id and school_class_id are required.' });
+    }
+
+    const exam = await Exam.findByPk(exam_id, { include: [{ model: Term, include: [{ model: AcademicYear }] }] });
+    if (!exam) return res.status(404).json({ message: 'Exam not found.' });
+
+    const schoolClass = await SchoolClass.findByPk(school_class_id);
+    if (!schoolClass) return res.status(404).json({ message: 'Class not found.' });
+
+    const academicYearId = exam.Term?.academic_year_id;
+    const enrollmentWhere = { school_class_id, ...(academicYearId ? { academic_year_id: academicYearId } : {}) };
+    if (stream_id) enrollmentWhere.stream_id = stream_id;
+
+    const enrollments = await Enrollment.findAll({ where: enrollmentWhere, include: [{ model: Student }] });
+
+    const report = await buildDivisionReport(enrollments, exam);
+    report.meta.class_name = schoolClass.name;
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to build the class results report.', error: err.message });
+  }
+};
+
+// GET /api/results/school-report?exam_id=
+exports.getSchoolResultsReport = async (req, res) => {
+  try {
+    const { exam_id } = req.query;
+    if (!exam_id) return res.status(400).json({ message: 'exam_id is required.' });
+
+    const exam = await Exam.findByPk(exam_id, { include: [{ model: Term, include: [{ model: AcademicYear }] }] });
+    if (!exam) return res.status(404).json({ message: 'Exam not found.' });
+
+    const academicYearId = exam.Term?.academic_year_id;
+    const enrollments = await Enrollment.findAll({
+      where: { ...(academicYearId ? { academic_year_id: academicYearId } : {}) },
+      include: [{ model: Student }, { model: SchoolClass }],
+    });
+
+    const report = await buildDivisionReport(enrollments, exam);
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to build the school results report.', error: err.message });
   }
 };

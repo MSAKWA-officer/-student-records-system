@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import DashboardHome from './pages/DashboardHome';
 import StudentList from './features/students/StudentList';
 import StudentForm from './features/students/StudentForm';
+import StudentTransferForm from './features/students/StudentTransferForm';
 import StudentView from './features/students/StudentView';
 import StudentReportCard from './features/students/StudentReportCard';
 import MyAttendance from './features/students/MyAttendance';
@@ -33,6 +34,9 @@ import ExamCreate from './features/exams/ExamCreate';
 import ExamUpdate from './features/exams/ExamUpdate';
 import ClassResultsPage from './features/results/ClassResultsPage';
 import ClassResultSlipsPage from './features/results/ClassResultSlipsPage';
+import ClassDivisionReportPage from './features/results/ClassDivisionReportPage';
+import SchoolDivisionReportPage from './features/results/SchoolDivisionReportPage';
+import ClassAnalysisReportPage from './features/results/ClassAnalysisReportPage';
 import OLevelResultList from './features/results/olevel/ResultList';
 import OLevelResultCreate from './features/results/olevel/ResultCreate';
 import OLevelResultUpdate from './features/results/olevel/ResultUpdate';
@@ -40,6 +44,7 @@ import OLevelResultView from './features/results/olevel/ResultView';
 import AttendanceList from './features/attendance/AttendanceList';
 import EnrollmentList from './features/enrollments/EnrollmentList';
 import EnrollmentCreate from './features/enrollments/EnrollmentCreate';
+import EnrollTransferredStudent from './features/enrollments/EnrollTransferredStudent';
 import EnrollmentUpdate from './features/enrollments/EnrollmentUpdate';
 import EnrollmentView from './features/enrollments/EnrollmentView';
 import ReportsList from './features/reports/ReportsList';
@@ -89,6 +94,14 @@ export default function App() {
               }
             />
             <Route path="students/:id" element={<StudentView />} />
+            <Route
+              path="students/add-transfer"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'staff']}>
+                  <StudentTransferForm />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="students/:id/edit"
               element={
@@ -333,6 +346,35 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            {/* NECTA-style Division Performance reports (whole class / whole
+                school), matching the printed examination-centre format. */}
+            <Route
+              path="reports/division/school"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <SchoolDivisionReportPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="reports/division/class/:classId"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <ClassDivisionReportPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Division Summary + Top 10 Best/Lowest + Subject Performance
+                for one class in one exam — has its own class/exam pickers,
+                so no :classId param is needed here. */}
+            <Route
+              path="reports/class-analysis"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher', 'teacher', 'staff']}>
+                  <ClassAnalysisReportPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="attendance"
               element={
@@ -370,6 +412,14 @@ export default function App() {
               element={
                 <ProtectedRoute roles={['admin', 'headteacher']}>
                   <EnrollmentCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="enrollments/transferred"
+              element={
+                <ProtectedRoute roles={['admin', 'headteacher']}>
+                  <EnrollTransferredStudent />
                 </ProtectedRoute>
               }
             />
