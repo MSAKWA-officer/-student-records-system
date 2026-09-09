@@ -367,8 +367,8 @@ exports.getClassAnalysisReport = async (req, res) => {
 // page, ClassAnalysisReportPage.jsx) — both can coexist.
 // ---------------------------------------------------------------------
 
-const DIVISION_REPORT_REGION = 'Mbeya';
-const DIVISION_REPORT_DISTRICT = 'Mbeya City';
+const DIVISION_REPORT_REGION = 'Dar es Salaam';
+const DIVISION_REPORT_DISTRICT = 'Ubungo'; // not used in the report yet, but included for future-proofing
 
 // Competency band for a subject/centre GPA, in line with the standard NECTA
 // 1.0–5.0 GPA scale used on examination-centre performance summaries.
